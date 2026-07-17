@@ -1,0 +1,354 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans:
+    "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --color-brand-50: #edfffb;
+  --color-brand-100: #c9fff5;
+  --color-brand-200: #94fbea;
+  --color-brand-300: #57efdb;
+  --color-brand-400: #25d6c3;
+  --color-brand-500: #0bb8a8;
+  --color-brand-600: #009688;
+  --color-brand-700: #007a70;
+  --color-brand-800: #086159;
+  --color-brand-900: #0b504a;
+  --color-accent-50: #fff8e8;
+  --color-accent-100: #ffedc5;
+  --color-accent-200: #ffda85;
+  --color-accent-300: #ffc045;
+  --color-accent-400: #ffa51b;
+  --color-accent-500: #ff9200;
+  --color-accent-600: #e66f00;
+  --color-accent-700: #b84c00;
+  --color-accent-800: #943a08;
+  --color-accent-900: #7a310d;
+}
+
+:root {
+  font-family:
+    "Plus Jakarta Sans Variable",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  color: #0f172a;
+  background: #f8fafc;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+::selection {
+  background: #94fbea;
+  color: #0b504a;
+}
+
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 650ms ease var(--reveal-delay, 0ms),
+    transform 650ms ease var(--reveal-delay, 0ms);
+}
+
+.scroll-reveal[data-visible="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.landing-hero-grid {
+  background-image:
+    linear-gradient(to right, rgb(0 150 136 / 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(0 150 136 / 0.045) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+.landing-gradient-text {
+  background: linear-gradient(100deg, #007a70 5%, #009688 50%, #e66f00 95%);
+  background-clip: text;
+  color: transparent;
+}
+
+.landing-float {
+  animation: landing-float 4.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+.landing-float-two {
+  animation-delay: -2.1s;
+}
+
+.landing-orb {
+  animation: landing-orb 9s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.landing-orb-two {
+  animation-delay: -4s;
+}
+
+.landing-pulse-dot {
+  animation: landing-pulse 2.2s ease-in-out infinite;
+}
+
+.hero-journey-step {
+  opacity: 0;
+  transform: translateX(18px);
+  animation: landing-step-in 600ms ease forwards;
+  animation-delay: var(--journey-delay, 0ms);
+}
+
+.landing-marquee-mask {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 8%,
+    black 92%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 8%,
+    black 92%,
+    transparent
+  );
+}
+
+.landing-marquee {
+  display: flex;
+  width: max-content;
+  animation: landing-marquee 28s linear infinite;
+  will-change: transform;
+}
+
+.landing-marquee-group {
+  display: flex;
+  min-width: 100vw;
+  flex: none;
+  align-items: center;
+  justify-content: space-around;
+  gap: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.landing-marquee-mask:hover .landing-marquee {
+  animation-play-state: paused;
+}
+
+.landing-progress-fill {
+  transform: scaleX(0);
+}
+
+.scroll-reveal[data-visible="true"] .landing-progress-fill {
+  animation: landing-progress 1.2s ease 250ms forwards;
+}
+
+.landing-step-float {
+  animation: landing-step-float 5.5s ease-in-out infinite;
+  animation-delay: var(--step-float-delay, 0s);
+  will-change: transform;
+}
+
+.landing-step-float:hover {
+  z-index: 10;
+  animation-play-state: paused;
+}
+
+.landing-step-card {
+  transition:
+    transform 300ms ease,
+    border-color 300ms ease,
+    box-shadow 300ms ease;
+}
+
+.landing-step-float:hover .landing-step-card {
+  transform: translateY(-6px);
+  border-color: #94fbea;
+  box-shadow: 0 18px 36px rgb(11 80 74 / 0.13);
+}
+
+.landing-step-icon {
+  transition: transform 300ms ease;
+}
+
+.landing-step-float:hover .landing-step-icon {
+  transform: translateY(-2px) rotate(-4deg) scale(1.08);
+}
+
+.landing-role-panel {
+  animation: landing-panel-in 420ms ease both;
+}
+
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(1deg);
+  }
+}
+
+@keyframes landing-orb {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(18px, -12px, 0) scale(1.08);
+  }
+}
+
+@keyframes landing-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(0.82);
+  }
+}
+
+@keyframes landing-step-in {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes landing-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes landing-progress {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes landing-step-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes landing-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .scroll-reveal,
+  .scroll-reveal[data-visible="true"] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .landing-float,
+  .landing-orb,
+  .landing-pulse-dot,
+  .hero-journey-step,
+  .landing-marquee,
+  .landing-step-float,
+  .scroll-reveal[data-visible="true"] .landing-progress-fill,
+  .landing-role-panel {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .landing-step-card,
+  .landing-step-icon {
+    transition: none;
+  }
+
+  .landing-step-float:hover .landing-step-card,
+  .landing-step-float:hover .landing-step-icon {
+    transform: none;
+  }
+}
+
+@media print {
+  @page {
+    margin: 1.5cm;
+  }
+
+  body,
+  .legal-print-page {
+    background: white !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .legal-print-page main {
+    max-width: none;
+    padding: 0;
+  }
+
+  .legal-print-page main > header {
+    border: 0;
+    border-bottom: 2px solid #0f766e;
+    border-radius: 0;
+    background: white !important;
+    box-shadow: none;
+    color: #020617;
+    padding: 0 0 1.5rem;
+  }
+
+  .legal-print-page main > header p,
+  .legal-print-page main > header span,
+  .legal-print-page main > header div {
+    color: #334155;
+  }
+
+  .legal-print-page main > div {
+    display: block;
+    margin-top: 1.5rem;
+  }
+
+  .legal-section {
+    break-inside: avoid;
+    border-color: #cbd5e1;
+    box-shadow: none;
+  }
+}
