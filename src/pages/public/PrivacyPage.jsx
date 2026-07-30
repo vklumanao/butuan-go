@@ -16,7 +16,7 @@ import { isDemoMode } from "@/lib/supabase";
 const PRIVACY_SECTIONS = [
   { id: "information-collected", title: "Information we collect" },
   { id: "how-information-is-used", title: "How information is used" },
-  { id: "requests-and-locations", title: "Requests and precise locations" },
+  { id: "requests-and-locations", title: "Requests and location privacy" },
   { id: "authentication-and-notifications", title: "Authentication and notifications" },
   { id: "payment-information", title: "Payment information" },
   { id: "browser-and-demo-data", title: "Browser storage and demo mode" },
@@ -29,7 +29,7 @@ export function PrivacyPage() {
       documentKey="privacy"
       title="Privacy notice"
       description="A plain-language explanation of the information ButuanGo uses, where it is visible, and the controls available in this development milestone."
-      lastUpdated="July 18, 2026"
+      lastUpdated="July 31, 2026"
       readingTime="5 min"
       sections={PRIVACY_SECTIONS}
     >
@@ -72,7 +72,7 @@ export function PrivacyPage() {
 
       <LegalSection
         id="requests-and-locations"
-        title="Requests and precise locations"
+        title="Requests and location privacy"
         icon={MapPin}
       >
         <p>
@@ -88,6 +88,20 @@ export function PrivacyPage() {
           edits to the saved template do not silently change an existing task.
           A Runner's saved addresses are not automatically shared with a
           Requestor or attached to a task.
+        </p>
+        <p>
+          A Requestor may optionally select a public request area using device
+          location, a submitted place search, or the map. The browser coarsens
+          the selected coordinates before sending them to ButuanGo, and Runners
+          see only a shaded approximate area and distance range before
+          acceptance. ButuanGo does not store a Runner's device position.
+        </p>
+        <p>
+          Map rendering and place search use configured third-party services.
+          Those providers receive ordinary network information needed to show
+          the visible map area or process the submitted search words. Do not
+          enter a private home address, contact detail, or other sensitive
+          information into the public place-search field.
         </p>
       </LegalSection>
 

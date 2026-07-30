@@ -15,7 +15,10 @@ import { FULFILLMENT_TYPES, REQUEST_STATUSES } from "@/lib/requestConstants";
 import { devLog } from "@/lib/errors";
 import { formatCurrency, getFriendlyRequestError } from "@/lib/requestUtils";
 import { useAuth } from "@/hooks/useAuth";
-import { RequestLocationFields } from "@/components/requests/RequestLocationFields";
+import {
+  ApproximateLocationPicker,
+  RequestLocationFields,
+} from "@/components/requests/RequestLocationFields";
 import { InPersonPaymentNotice } from "@/components/requests/InPersonPaymentNotice";
 import { FormField } from "@/components/common/FormField";
 import { FullPageLoader } from "@/components/common/FullPageLoader";
@@ -56,6 +59,7 @@ export function EditRequestPage() {
   const {
     register,
     setValue,
+    trigger,
     handleSubmit,
     control,
     reset,
@@ -79,6 +83,8 @@ export function EditRequestPage() {
       deliveryInstructions: "",
       contactName: profile.full_name || "",
       contactPhone: profile.phone_number || "",
+      approximateLatitude: null,
+      approximateLongitude: null,
     },
   });
   const expenseBudget =
@@ -124,6 +130,8 @@ export function EditRequestPage() {
           deliveryInstructions: location?.delivery_instructions || "",
           contactName: location?.contact_name || profile.full_name || "",
           contactPhone: location?.contact_phone || profile.phone_number || "",
+          approximateLatitude: request.approximate_latitude,
+          approximateLongitude: request.approximate_longitude,
         });
       }
       setLoading(false);
@@ -248,6 +256,20 @@ export function EditRequestPage() {
                 />
               </div>
             </FormField>
+            <ApproximateLocationPicker
+              control={control}
+              register={register}
+              setValue={setValue}
+              trigger={trigger}
+              errors={errors}
+              idPrefix="edit"
+              onAreaSuggested={(suggestedArea) =>
+                setValue("area", suggestedArea, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+            />
             <div className="grid gap-5 sm:grid-cols-2">
               <FormField
                 id="editExpenseBudget"

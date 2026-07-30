@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { coarsenCoordinate } from "@/lib/geoUtils";
 import { REQUEST_STATUSES } from "@/lib/requestConstants";
 
 const REQUEST_SELECT = `
@@ -9,6 +10,8 @@ const REQUEST_SELECT = `
   title,
   description,
   area,
+  approximate_latitude,
+  approximate_longitude,
   expense_budget,
   service_fee,
   due_at,
@@ -28,6 +31,24 @@ function normalizeRpcRow(data) {
   return Array.isArray(data) ? data[0] || null : data;
 }
 
+function locationRpcParams(values) {
+  return {
+    p_fulfillment_type: values.fulfillmentType,
+    p_pickup_address: values.pickupAddress.trim() || null,
+    p_pickup_landmark: values.pickupLandmark.trim() || null,
+    p_pickup_instructions: values.pickupInstructions.trim() || null,
+    p_delivery_address: values.deliveryAddress.trim() || null,
+    p_delivery_landmark: values.deliveryLandmark.trim() || null,
+    p_delivery_instructions: values.deliveryInstructions.trim() || null,
+    p_contact_name: values.contactName.trim(),
+    p_contact_phone: values.contactPhone.trim(),
+    // Coarsen in the browser before transmission; the RPC enforces the same
+    // precision again so a modified client cannot persist an exact point.
+    p_approximate_latitude: coarsenCoordinate(values.approximateLatitude),
+    p_approximate_longitude: coarsenCoordinate(values.approximateLongitude),
+  };
+}
+
 export async function getCategories() {
   return supabase
     .from("categories")
@@ -38,30 +59,25 @@ export async function getCategories() {
 }
 
 export async function createRequest(values) {
-  const { data, error } = await supabase.rpc("create_request_with_location", {
-    p_category_id: Number(values.categoryId),
-    p_title: values.title.trim(),
-    p_description: values.description.trim(),
-    p_area: values.area.trim(),
-    p_expense_budget: Number(values.expenseBudget),
-    p_service_fee: Number(values.serviceFee),
-    p_due_at: values.dueAt ? new Date(values.dueAt).toISOString() : null,
-    p_fulfillment_type: values.fulfillmentType,
-    p_pickup_address: values.pickupAddress.trim() || null,
-    p_pickup_landmark: values.pickupLandmark.trim() || null,
-    p_pickup_instructions: values.pickupInstructions.trim() || null,
-    p_delivery_address: values.deliveryAddress.trim() || null,
-    p_delivery_landmark: values.deliveryLandmark.trim() || null,
-    p_delivery_instructions: values.deliveryInstructions.trim() || null,
-    p_contact_name: values.contactName.trim(),
-    p_contact_phone: values.contactPhone.trim(),
-  });
+  const { data, error } = await supabase.rpc(
+    "create_request_with_location_and_geography",
+    {
+      p_category_id: Number(values.categoryId),
+      p_title: values.title.trim(),
+      p_description: values.description.trim(),
+      p_area: values.area.trim(),
+      p_expense_budget: Number(values.expenseBudget),
+      p_service_fee: Number(values.serviceFee),
+      p_due_at: values.dueAt ? new Date(values.dueAt).toISOString() : null,
+      ...locationRpcParams(values),
+    },
+  );
   return { data: normalizeRpcRow(data), error };
 }
 
 export async function updateOpenRequest(requestId, values) {
   const { data, error } = await supabase.rpc(
-    "update_open_request_with_location",
+    "update_open_request_with_location_and_geography",
     {
       p_request_id: requestId,
       p_category_id: Number(values.categoryId),
@@ -71,15 +87,7 @@ export async function updateOpenRequest(requestId, values) {
       p_expense_budget: Number(values.expenseBudget),
       p_service_fee: Number(values.serviceFee),
       p_due_at: values.dueAt ? new Date(values.dueAt).toISOString() : null,
-      p_fulfillment_type: values.fulfillmentType,
-      p_pickup_address: values.pickupAddress.trim() || null,
-      p_pickup_landmark: values.pickupLandmark.trim() || null,
-      p_pickup_instructions: values.pickupInstructions.trim() || null,
-      p_delivery_address: values.deliveryAddress.trim() || null,
-      p_delivery_landmark: values.deliveryLandmark.trim() || null,
-      p_delivery_instructions: values.deliveryInstructions.trim() || null,
-      p_contact_name: values.contactName.trim(),
-      p_contact_phone: values.contactPhone.trim(),
+      ...locationRpcParams(values),
     },
   );
   return { data: normalizeRpcRow(data), error };
@@ -96,18 +104,13 @@ export async function getRequestLocation(requestId) {
 }
 
 export async function saveRequestLocation(requestId, values) {
-  const { data, error } = await supabase.rpc("save_request_location", {
-    p_request_id: requestId,
-    p_fulfillment_type: values.fulfillmentType,
-    p_pickup_address: values.pickupAddress.trim() || null,
-    p_pickup_landmark: values.pickupLandmark.trim() || null,
-    p_pickup_instructions: values.pickupInstructions.trim() || null,
-    p_delivery_address: values.deliveryAddress.trim() || null,
-    p_delivery_landmark: values.deliveryLandmark.trim() || null,
-    p_delivery_instructions: values.deliveryInstructions.trim() || null,
-    p_contact_name: values.contactName.trim(),
-    p_contact_phone: values.contactPhone.trim(),
-  });
+  const { data, error } = await supabase.rpc(
+    "save_request_location_and_geography",
+    {
+      p_request_id: requestId,
+      ...locationRpcParams(values),
+    },
+  );
   return { data: normalizeRpcRow(data), error };
 }
 
@@ -268,8 +271,7 @@ export async function getRequestorSummary(userId) {
   for (const request of data || []) {
     if (request.status === REQUEST_STATUSES.OPEN) counts.open += 1;
     if (request.status === REQUEST_STATUSES.ACCEPTED) counts.accepted += 1;
-    if (request.status === REQUEST_STATUSES.IN_PROGRESS)
-      counts.inProgress += 1;
+    if (request.status === REQUEST_STATUSES.IN_PROGRESS) counts.inProgress += 1;
     if (request.status === REQUEST_STATUSES.AWAITING_CONFIRMATION)
       counts.awaitingConfirmation += 1;
 
@@ -292,8 +294,7 @@ export async function getRequestorSummary(userId) {
     }
   }
 
-  counts.plannedTotal =
-    counts.plannedExpenseBudget + counts.plannedServiceFees;
+  counts.plannedTotal = counts.plannedExpenseBudget + counts.plannedServiceFees;
   return { data: counts, error: null };
 }
 

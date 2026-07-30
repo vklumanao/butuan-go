@@ -1,11 +1,28 @@
-import { LockKeyhole, MapPin, MapPinOff, Pencil, Phone, RefreshCw, Store } from "lucide-react";
+import {
+  LockKeyhole,
+  MapPin,
+  MapPinOff,
+  Navigation,
+  Pencil,
+  Phone,
+  RefreshCw,
+  Store,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { FULFILLMENT_TYPE_LABELS } from "@/lib/requestConstants";
+import { buildDirectionsUrl } from "@/lib/requestUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-function LocationSection({ icon: Icon, title, address, landmark, instructions }) {
+function LocationSection({
+  icon: Icon,
+  title,
+  address,
+  landmark,
+  instructions,
+}) {
   if (!address) return null;
+  const directionsUrl = buildDirectionsUrl(address);
   return (
     <section className="flex gap-3 border-t border-slate-200 pt-5 first:border-0 first:pt-0">
       <Icon className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
@@ -23,6 +40,14 @@ function LocationSection({ icon: Icon, title, address, landmark, instructions })
           <p className="mt-2 whitespace-pre-wrap break-words text-sm text-slate-600 [overflow-wrap:anywhere]">
             <strong>Instructions:</strong> {instructions}
           </p>
+        )}
+        {directionsUrl && (
+          <Button variant="outline" size="sm" className="mt-3" asChild>
+            <a href={directionsUrl} target="_blank" rel="noreferrer">
+              <Navigation className="h-4 w-4" />
+              Open directions
+            </a>
+          </Button>
         )}
       </div>
     </section>
@@ -97,7 +122,8 @@ export function RequestLocationDetails({
         <div className="min-w-0">
           <CardTitle>Private location details</CardTitle>
           <p className="mt-1 text-sm text-slate-500">
-            {FULFILLMENT_TYPE_LABELS[location.fulfillment_type] || "Task location"}
+            {FULFILLMENT_TYPE_LABELS[location.fulfillment_type] ||
+              "Task location"}
           </p>
         </div>
         {editTo && (

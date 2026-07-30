@@ -14,6 +14,70 @@ export function formatDateTime(value, fallback = "No deadline set") {
   }).format(new Date(value));
 }
 
+export function calculateDistanceKm(origin, destination) {
+  if (
+    !origin ||
+    !destination ||
+    origin.latitude === null ||
+    origin.latitude === undefined ||
+    origin.latitude === "" ||
+    origin.longitude === null ||
+    origin.longitude === undefined ||
+    origin.longitude === "" ||
+    destination.latitude === null ||
+    destination.latitude === undefined ||
+    destination.latitude === "" ||
+    destination.longitude === null ||
+    destination.longitude === undefined ||
+    destination.longitude === "" ||
+    !Number.isFinite(Number(origin.latitude)) ||
+    !Number.isFinite(Number(origin.longitude)) ||
+    !Number.isFinite(Number(destination.latitude)) ||
+    !Number.isFinite(Number(destination.longitude))
+  ) {
+    return null;
+  }
+
+  const toRadians = (degrees) => (degrees * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const latitudeDelta = toRadians(
+    Number(destination.latitude) - Number(origin.latitude),
+  );
+  const longitudeDelta = toRadians(
+    Number(destination.longitude) - Number(origin.longitude),
+  );
+  const originLatitude = toRadians(Number(origin.latitude));
+  const destinationLatitude = toRadians(Number(destination.latitude));
+  const haversine =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(originLatitude) *
+      Math.cos(destinationLatitude) *
+      Math.sin(longitudeDelta / 2) ** 2;
+
+  return (
+    earthRadiusKm *
+    2 *
+    Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine))
+  );
+}
+
+export function formatDistance(distanceKm) {
+  if (!Number.isFinite(distanceKm)) return "";
+  if (distanceKm < 1) return "Approximately within 1 km";
+  if (distanceKm >= 20) {
+    const lowerBound = Math.floor(distanceKm / 5) * 5;
+    return `Approximately ${lowerBound}–${lowerBound + 5} km away`;
+  }
+  const lowerBound = Math.floor(distanceKm);
+  return `Approximately ${lowerBound}–${lowerBound + 1} km away`;
+}
+
+export function buildDirectionsUrl(destination) {
+  const query = typeof destination === "string" ? destination.trim() : "";
+  if (!query) return null;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}`;
+}
+
 export function getFriendlyRequestError(
   error,
   action = "complete that request",
