@@ -1,14 +1,19 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import {
   CalendarClock,
   CheckCircle2,
   ClipboardList,
   LayoutGrid,
   ListTodo,
+  LocateFixed,
+  LoaderCircle,
+  Map as MapIcon,
   MapPin,
+  Navigation,
   PackageCheck,
   Printer,
   Search,
+  Rows3,
   Shirt,
   ShoppingBasket,
   Utensils,
@@ -20,12 +25,24 @@ import {
   getRunnerTasks,
 } from "@/services/requestService";
 import { devLog } from "@/lib/errors";
-import { formatCurrency, formatDateTime } from "@/lib/requestUtils";
+import {
+  calculateDistanceKm,
+  formatCurrency,
+  formatDateTime,
+  formatDistance,
+} from "@/lib/requestUtils";
 import { RequestStatusBadge } from "@/components/requests/RequestStatusBadge";
 import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
+
+const RunnerRequestsMap = lazy(() =>
+  import("@/components/requests/RunnerRequestsMap").then((module) => ({
+    default: module.RunnerRequestsMap,
+  })),
+);
 
 const CATEGORY_ICONS = {
   "shopping-groceries": ShoppingBasket,
@@ -119,6 +136,123 @@ function CategoryFilters({
   );
 }
 
+function NearbyControls({
+  runnerLocation,
+  radiusKm,
+  locating,
+  error,
+  onLocate,
+  onRadiusChange,
+  onClear,
+}) {
+  return (
+    <section
+      className="mt-4 rounded-2xl border border-brand-200 bg-brand-50/50 p-4 sm:p-5"
+      aria-labelledby="nearby-filter-title"
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2
+            id="nearby-filter-title"
+            className="flex items-center gap-2 font-black text-brand-950"
+          >
+            <Navigation className="h-5 w-5 text-brand-700" />
+            Nearby requests
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-brand-900/75">
+            ButuanGo does not save your Runner position. The browser uses it to
+            estimate distance from public, neighborhood-level request
+            areas. Distances are displayed as ranges, not exact measurements.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          {runnerLocation && (
+            <label className="text-sm font-semibold text-brand-950">
+              Within
+              <select
+                value={radiusKm}
+                onChange={(event) => onRadiusChange(event.target.value)}
+                className="ml-2 h-9 rounded-lg border border-brand-200 bg-white px-3 text-sm outline-none focus-visible:border-brand-600 focus-visible:ring-2 focus-visible:ring-brand-600/20"
+              >
+                <option value="all">Any distance</option>
+                <option value="2">2 km</option>
+                <option value="5">5 km</option>
+                <option value="10">10 km</option>
+                <option value="20">20 km</option>
+              </select>
+            </label>
+          )}
+          <Button
+            type="button"
+            size="sm"
+            variant={runnerLocation ? "outline" : "default"}
+            onClick={onLocate}
+            disabled={locating}
+          >
+            {locating ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : (
+              <LocateFixed className="h-4 w-4" />
+            )}
+            {locating
+              ? "Finding you…"
+              : runnerLocation
+                ? "Update location"
+                : "Use my location"}
+          </Button>
+          {runnerLocation && (
+            <Button type="button" size="sm" variant="ghost" onClick={onClear}>
+              Clear
+            </Button>
+          )}
+        </div>
+      </div>
+      {error && (
+        <p className="mt-3 text-sm text-red-700" role="alert">
+          {error}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function ViewToggle({ value, onChange }) {
+  return (
+    <div
+      className="mt-4 inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm"
+      role="group"
+      aria-label="Choose request view"
+    >
+      <button
+        type="button"
+        onClick={() => onChange("list")}
+        aria-pressed={value === "list"}
+        className={`inline-flex h-9 items-center gap-2 rounded-lg px-4 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 ${
+          value === "list"
+            ? "bg-brand-600 text-white"
+            : "text-slate-600 hover:bg-slate-50"
+        }`}
+      >
+        <Rows3 className="h-4 w-4" />
+        List
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("map")}
+        aria-pressed={value === "map"}
+        className={`inline-flex h-9 items-center gap-2 rounded-lg px-4 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 ${
+          value === "map"
+            ? "bg-brand-600 text-white"
+            : "text-slate-600 hover:bg-slate-50"
+        }`}
+      >
+        <MapIcon className="h-4 w-4" />
+        Map
+      </button>
+    </div>
+  );
+}
+
 function RunnerRequestList({ mode }) {
   const { user } = useAuth();
   const availableMode = mode === "available";
@@ -126,12 +260,18 @@ function RunnerRequestList({ mode }) {
   const selectedCategorySlug = availableMode
     ? searchParams.get("category") || ""
     : "";
+  const viewMode =
+    availableMode && searchParams.get("view") === "map" ? "map" : "list";
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(availableMode);
   const [categoryError, setCategoryError] = useState("");
   const [requests, setRequests] = useState([]);
   const [loadedRequestKey, setLoadedRequestKey] = useState("");
   const [error, setError] = useState("");
+  const [runnerLocation, setRunnerLocation] = useState(null);
+  const [radiusKm, setRadiusKm] = useState("all");
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState("");
 
   const selectedCategory = categories.find(
     (category) => category.slug === selectedCategorySlug,
@@ -141,6 +281,30 @@ function RunnerRequestList({ mode }) {
     ? `available:${selectedCategoryId || "all"}`
     : "tasks";
   const requestsLoading = categoriesLoading || loadedRequestKey !== requestKey;
+  const visibleRequests = useMemo(() => {
+    const withDistance = requests.map((request) => {
+      const distanceKm = calculateDistanceKm(runnerLocation, {
+        latitude: request.approximate_latitude,
+        longitude: request.approximate_longitude,
+      });
+      return { ...request, distanceKm };
+    });
+
+    if (!runnerLocation) return withDistance;
+
+    const sorted = [...withDistance].sort((first, second) => {
+      if (first.distanceKm === null) return 1;
+      if (second.distanceKm === null) return -1;
+      return first.distanceKm - second.distanceKm;
+    });
+    if (radiusKm === "all") return sorted;
+
+    const maximumDistance = Number(radiusKm);
+    return sorted.filter(
+      (request) =>
+        request.distanceKm !== null && request.distanceKm <= maximumDistance,
+    );
+  }, [radiusKm, requests, runnerLocation]);
 
   useEffect(() => {
     if (!availableMode) return undefined;
@@ -229,6 +393,55 @@ function RunnerRequestList({ mode }) {
     setSearchParams(nextSearchParams, { replace: true });
   }
 
+  function selectView(view) {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (view === "map") nextSearchParams.set("view", "map");
+    else nextSearchParams.delete("view");
+    setSearchParams(nextSearchParams, { replace: true });
+  }
+
+  function locateRunner() {
+    setLocationError("");
+    if (!navigator.geolocation) {
+      setLocationError("Location is not supported by this browser.");
+      return;
+    }
+
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setRunnerLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        setLocating(false);
+      },
+      (geolocationError) => {
+        const messages = {
+          1: "Location permission was denied. You can continue browsing by area.",
+          2: "Your device could not determine its location. Try again or continue browsing by area.",
+          3: "Finding your location took too long. Please try again.",
+        };
+        setLocationError(
+          messages[geolocationError.code] ||
+            "We could not determine your location.",
+        );
+        setLocating(false);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 12000,
+        maximumAge: 300000,
+      },
+    );
+  }
+
+  function clearRunnerLocation() {
+    setRunnerLocation(null);
+    setRadiusKm("all");
+    setLocationError("");
+  }
+
   const title = availableMode ? "Available Requests" : "My Tasks";
   const description = availableMode
     ? "Browse open everyday errands posted by local Requestors."
@@ -251,10 +464,24 @@ function RunnerRequestList({ mode }) {
           categories={categories}
           loading={categoriesLoading}
           selectedSlug={selectedCategorySlug}
-          resultCount={requests.length}
+          resultCount={visibleRequests.length}
           onSelect={selectCategory}
         />
       )}
+
+      {availableMode && (
+        <NearbyControls
+          runnerLocation={runnerLocation}
+          radiusKm={radiusKm}
+          locating={locating}
+          error={locationError}
+          onLocate={locateRunner}
+          onRadiusChange={setRadiusKm}
+          onClear={clearRunnerLocation}
+        />
+      )}
+
+      {availableMode && <ViewToggle value={viewMode} onChange={selectView} />}
 
       {categoryError && (
         <Alert className="mt-4 border-amber-200 bg-amber-50 text-amber-950">
@@ -278,25 +505,43 @@ function RunnerRequestList({ mode }) {
             </Card>
           ))}
         </div>
-      ) : !error && requests.length === 0 ? (
+      ) : !error && visibleRequests.length === 0 ? (
         <Card className="mt-6 border-dashed">
           <CardContent className="flex flex-col items-center py-14 text-center">
             <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-50">
               {availableMode ? (
-                <Search className="h-7 w-7 text-brand-600" />
+                runnerLocation && radiusKm !== "all" ? (
+                  <Navigation className="h-7 w-7 text-brand-600" />
+                ) : (
+                  <Search className="h-7 w-7 text-brand-600" />
+                )
               ) : (
                 <CheckCircle2 className="h-7 w-7 text-brand-600" />
               )}
             </span>
             <h2 className="mt-5 text-xl font-bold">
-              {availableMode ? emptyAvailableTitle : "No accepted tasks yet"}
+              {availableMode && runnerLocation && radiusKm !== "all"
+                ? `No requests within ${radiusKm} km`
+                : availableMode
+                  ? emptyAvailableTitle
+                  : "No accepted tasks yet"}
             </h2>
             <p className="mt-2 max-w-md text-slate-600">
               {availableMode
-                ? emptyAvailableDescription
+                ? runnerLocation && radiusKm !== "all"
+                  ? "Try a wider distance or browse requests without a distance limit."
+                  : emptyAvailableDescription
                 : "Accept an available request and it will move into this workspace."}
             </p>
-            {availableMode && selectedCategory && (
+            {availableMode && runnerLocation && radiusKm !== "all" ? (
+              <button
+                type="button"
+                onClick={() => setRadiusKm("all")}
+                className="mt-5 font-bold text-brand-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
+              >
+                Remove distance limit
+              </button>
+            ) : availableMode && selectedCategory ? (
               <button
                 type="button"
                 onClick={() => selectCategory("")}
@@ -304,7 +549,7 @@ function RunnerRequestList({ mode }) {
               >
                 View all open requests
               </button>
-            )}
+            ) : null}
             {!availableMode && (
               <Link
                 to="/runner/requests"
@@ -315,9 +560,29 @@ function RunnerRequestList({ mode }) {
             )}
           </CardContent>
         </Card>
+      ) : availableMode && viewMode === "map" ? (
+        <Suspense
+          fallback={
+            <Card className="mt-6 h-[32rem] sm:h-[38rem]">
+              <CardContent className="grid h-full place-items-center">
+                <div className="text-center text-slate-600">
+                  <MapIcon className="mx-auto h-8 w-8 animate-pulse text-brand-600" />
+                  <p className="mt-3 text-sm font-semibold">
+                    Preparing interactive map…
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          }
+        >
+          <RunnerRequestsMap
+            requests={visibleRequests}
+            runnerLocation={runnerLocation}
+          />
+        </Suspense>
       ) : (
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          {requests.map((request) => {
+          {visibleRequests.map((request) => {
             const detailPath = availableMode
               ? `/runner/requests/${request.id}`
               : `/runner/tasks/${request.id}`;
@@ -341,6 +606,12 @@ function RunnerRequestList({ mode }) {
                         <MapPin className="h-4 w-4 text-brand-600" />
                         {request.area}
                       </p>
+                      {request.distanceKm !== null && (
+                        <p className="flex items-center gap-2 font-semibold text-brand-700">
+                          <Navigation className="h-4 w-4" />
+                          {formatDistance(request.distanceKm)}
+                        </p>
+                      )}
                       <p className="flex items-center gap-2">
                         <CalendarClock className="h-4 w-4 text-brand-600" />
                         {formatDateTime(request.due_at)}

@@ -4,9 +4,9 @@ ButuanGo is a local task-request marketplace foundation for Requestors who need 
 
 ## Milestone scope
 
-Included: responsive landing and account UI, Requestor/Runner starting-mode registration, secure Requestor/Runner workspace switching, login, persistent sessions, logout confirmation, automatic profile creation, protected and active-role routes, profile editing, request creation and acceptance, secure in-app realtime notifications, loading/error states, SQL schema, triggers, and Row-Level Security.
+Included: responsive landing and account UI, Requestor/Runner starting-mode registration, secure Requestor/Runner workspace switching, login, persistent sessions, logout confirmation, automatic profile creation, protected and active-role routes, profile editing, request creation and acceptance, privacy-preserving nearby discovery with interactive map and list views, post-acceptance directions, secure in-app realtime notifications, loading/error states, SQL schema, triggers, and Row-Level Security.
 
-Excluded from the current UI: email/SMS/browser-push notifications, platform-processed payments/GCash/escrow, chat, maps/GPS, ratings, reviews, AI, identity verification, government transactions, and administration UI.
+Excluded from the current UI: email/SMS/browser-push notifications, platform-processed payments/GCash/escrow, chat, live GPS tracking, ratings, reviews, AI, identity verification, government transactions, and administration UI.
 
 ## Technology
 
@@ -15,6 +15,7 @@ Excluded from the current UI: email/SMS/browser-push notifications, platform-pro
 - shadcn/ui-style components backed by Radix UI
 - Lucide React icons and Sonner notifications
 - React Hook Form, Zod, and the Zod resolver
+- MapLibre GL JS with a configurable vector basemap style
 - Supabase Authentication and PostgreSQL
 
 ## Prerequisites
@@ -38,6 +39,10 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 Never commit `.env` or expose a Supabase service-role key in Vite. Restart the development server after changing environment variables.
 
+`VITE_MAP_STYLE_URL` is optional. The app defaults to the OpenFreeMap Liberty style. Set it to another MapLibre-compatible style URL when using a dedicated production map provider or a self-hosted style.
+
+`VITE_GEOCODING_SEARCH_URL` is also optional. The development default uses the public Nominatim search endpoint only when a user explicitly submits a place or barangay query; it does not implement autocomplete or reverse-geocoding. Configure a dedicated Nominatim-compatible provider or self-hosted endpoint before material production traffic.
+
 ## Supabase setup
 
 1. Create a Supabase project.
@@ -52,8 +57,9 @@ Never commit `.env` or expose a Supabase service-role key in Vite. Restart the d
 10. Run `supabase/migrations/008_task_recovery.sql`, then run `supabase/verify_task_recovery.sql`. This adds pre-start Runner release, cancellation of assigned-but-not-started requests, recovery history, notifications, and immediate capacity release.
 11. Run `supabase/migrations/009_dual_role_mode.sql`, then run `supabase/verify_dual_role_mode.sql`. This adds the secure active workspace, role-switch RPC, profile protections, and initialization for existing accounts.
 12. Run `supabase/migrations/010_account_saved_addresses.sql`, then run `supabase/verify_account_saved_addresses.sql`. This makes the private address book available from either workspace without weakening owner-only access.
-13. Under **Authentication → URL Configuration**, set the Site URL to `http://localhost:5173` for local development. Add `http://localhost:5173/auth/callback` and `http://localhost:5173/reset-password` to the allowed redirect URLs. Add their production equivalents after deployment.
-14. Under **Authentication → Providers → Email**, keep Email enabled. Choose whether **Confirm email** is required.
+13. Run `supabase/migrations/011_approximate_request_geography.sql`, then run `supabase/verify_approximate_request_geography.sql`. This adds server-rounded neighborhood coordinates, secure Requestor mutation RPCs, local nearby filtering, and directions from participant-only addresses.
+14. Under **Authentication → URL Configuration**, set the Site URL to `http://localhost:5173` for local development. Add `http://localhost:5173/auth/callback` and `http://localhost:5173/reset-password` to the allowed redirect URLs. Add their production equivalents after deployment.
+15. Under **Authentication → Providers → Email**, keep Email enabled. Choose whether **Confirm email** is required.
 
 If email confirmation is enabled, registration shows inbox instructions and the confirmation link returns through `/auth/callback`. If disabled, Supabase returns a session and the user is immediately routed to the selected dashboard. Password-recovery emails return through `/reset-password`.
 
@@ -140,6 +146,18 @@ Request queries are explicitly scoped by context: Requestor pages require `reque
 
 To verify dual mode, register with either starting mode and use the sidebar or mobile account menu to switch. Create a request in Requestor mode, switch to Runner mode, and confirm your own request is absent from Available Requests. Accept a different account's request, switch back to Requestor, and confirm the assigned task does not appear under My Requests. Switch to Runner again and confirm the assignment and capacity state remain intact.
 
+### Privacy-preserving nearby discovery
+
+Requestors may optionally use their device location when creating or editing a request. The browser rounds the coordinates to two decimal places (roughly neighborhood-level precision) before sending them, and an ownership-checking RPC enforces that precision again before storage. The exact captured coordinates never leave the request form. Runners may opt in to browser location on Available Requests; ButuanGo does not persist or send that position to Supabase, and the browser uses it to sort and filter public request approximations by straight-line distance.
+
+Requestors can alternatively open **Choose on map**, submit a barangay/place search, click the map, or drag a private orange editing pin. The shaded preview is centered on the same coarsened point that Runners receive, so it accurately shows the public area before submission. The editing pin itself is never included in Runner marketplace data, and place search explicitly warns users not to submit private information to the external geocoder.
+
+Available Requests provides synchronized **List** and **Map** views. Before acceptance, distance is displayed only as a range and each public location is rendered as a shaded approximate area rather than an address pin. The map supports an optional full-screen view, clusters overlapping areas, displays the Runner's non-persisted position when enabled, and opens a limited request preview linking to the protected detail route. Requests without an approximate location remain accessible in List view. The default OpenFreeMap style includes its underlying map-data attribution through MapLibre; a different compatible style may be configured with `VITE_MAP_STYLE_URL`.
+
+Exact written pickup and destination addresses remain in `request_locations` under participant-only RLS. Once a Runner accepts a request, the private location card provides a directions link based on the authorized address. Browser geolocation requires user permission and a secure context (HTTPS in production, with localhost supported for development); area-based browsing remains available when permission is declined.
+
+To verify the flow, create a request and open **Choose on map**. Search for a barangay or place, choose a result, then drag the orange editing pin and confirm the shaded public preview updates. Submit and confirm the stored `approximate_latitude` and `approximate_longitude` have two decimal places. In a Runner workspace, select **Use my location**, verify requests with approximate locations are ordered by distance range, and apply a radius. Switch to **Map**, select a shaded request area, and open its preview. Confirm the orange editing pin and exact address are absent. Accept the request, then verify the private address and **Open directions** control become available.
+
 ### In-person settlement policy
 
 ButuanGo does not collect, hold, transfer, refund, or process funds in this milestone. The Requestor pays the Runner directly during meetup or delivery, after reviewing the completed errand and applicable receipts. The stored expense budget and service fee are estimates and user agreements, not platform charges or proof of payment.
@@ -161,11 +179,14 @@ The Requestor should confirm completion only after receiving the item or service
 
 1. Sign in with a Requestor account and open `/requestor/requests`.
 2. Select **Create a Request** and verify that categories load from Supabase.
-3. Submit valid task details with a general area, non-negative amounts, and an optional future deadline.
-4. Confirm redirect to `/requestor/requests/:requestId` and verify the initial `OPEN` status plus `CREATED` history entry.
-5. Return to **My Requests** and confirm the real request appears.
-6. Open the Requestor dashboard and confirm the Open Requests count uses live data.
-7. Confirm a Runner account cannot open any `/requestor/requests` route.
+3. Complete **Task**, then select **Continue** and confirm incomplete fields keep the user on that step.
+4. Under **Location**, verify the fulfillment type and exact task details appear first with a **Shown after acceptance** label. Confirm the general area follows with a **Shown before acceptance** label and the map remains optional and collapsed until selected.
+5. Choose a fulfillment type and confirm only its required pickup/destination fields appear. Select **Continue** and verify the values remain intact after using **Back**.
+6. Under **Budget & review**, enter non-negative amounts, optionally select a future deadline, and verify the task, public area, fulfillment type, and estimated total summary.
+7. Post the request, confirm redirect to `/requestor/requests/:requestId`, and verify the initial `OPEN` status plus `CREATED` history entry.
+8. Return to **My Requests** and confirm the real request appears.
+9. Open the Requestor dashboard and confirm the Open Requests count uses live data.
+10. Confirm a Runner account cannot open any `/requestor/requests` route.
 
 ### Edit, cancel, and Runner acceptance verification
 
@@ -209,4 +230,4 @@ Confirm profile rows and roles in **Supabase → Table Editor → profiles**. Co
 
 ## Suggested next phase
 
-Add automated workflow and RLS tests, then implement production-quality category filters, search, pagination, and route-level code splitting. Keep platform payment integrations, chat, location tracking, and ratings as separate later milestones after the core request lifecycle is thoroughly tested.
+Add automated workflow and RLS tests plus service-coverage zones. Then implement private coordinates for saved-address templates, production-quality request search, pagination, and broader route-level code splitting. Keep platform payment integrations, chat, live location tracking, route optimization, and ratings as separate later milestones after the core request lifecycle is thoroughly tested.

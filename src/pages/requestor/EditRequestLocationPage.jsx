@@ -14,7 +14,10 @@ import { FULFILLMENT_TYPES, REQUEST_STATUSES } from "@/lib/requestConstants";
 import { devLog } from "@/lib/errors";
 import { getFriendlyRequestError } from "@/lib/requestUtils";
 import { useAuth } from "@/hooks/useAuth";
-import { RequestLocationFields } from "@/components/requests/RequestLocationFields";
+import {
+  ApproximateLocationPicker,
+  RequestLocationFields,
+} from "@/components/requests/RequestLocationFields";
 import { FullPageLoader } from "@/components/common/FullPageLoader";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -37,6 +40,7 @@ export function EditRequestLocationPage() {
   const {
     register,
     setValue,
+    trigger,
     handleSubmit,
     control,
     reset,
@@ -53,6 +57,8 @@ export function EditRequestLocationPage() {
       deliveryInstructions: "",
       contactName: profile.full_name || "",
       contactPhone: profile.phone_number || "",
+      approximateLatitude: null,
+      approximateLongitude: null,
     },
   });
   const fulfillmentType = useWatch({ control, name: "fulfillmentType" });
@@ -69,7 +75,7 @@ export function EditRequestLocationPage() {
           "Private location editor retrieval failed",
           requestResult.error || locationResult.error,
         );
-        setLoadError("We could not load the private location editor.");
+        setLoadError("We could not load the location editor.");
       } else {
         const location = locationResult.data;
         setRequest(requestResult.data);
@@ -84,6 +90,8 @@ export function EditRequestLocationPage() {
           deliveryInstructions: location?.delivery_instructions || "",
           contactName: location?.contact_name || profile.full_name || "",
           contactPhone: location?.contact_phone || profile.phone_number || "",
+          approximateLatitude: requestResult.data.approximate_latitude,
+          approximateLongitude: requestResult.data.approximate_longitude,
         });
       }
       setLoading(false);
@@ -97,18 +105,15 @@ export function EditRequestLocationPage() {
     setFormError("");
     const { error } = await saveRequestLocation(requestId, values);
     if (error) {
-      devLog("Private location update failed", error);
-      setFormError(
-        getFriendlyRequestError(error, "save the private location details"),
-      );
+      devLog("Location update failed", error);
+      setFormError(getFriendlyRequestError(error, "save the location details"));
       return;
     }
-    toast.success("Private location details saved.");
+    toast.success("Location details saved.");
     navigate(`/requestor/requests/${requestId}`, { replace: true });
   }
 
-  if (loading)
-    return <FullPageLoader message="Loading private location details…" />;
+  if (loading) return <FullPageLoader message="Loading location details…" />;
   if (loadError) {
     return (
       <div className="mx-auto max-w-4xl p-4 sm:p-8">
@@ -145,19 +150,18 @@ export function EditRequestLocationPage() {
           Back to request
         </Link>
       </Button>
-      <h1 className="text-3xl font-black tracking-tight">
-        Private location details
-      </h1>
+      <h1 className="text-3xl font-black tracking-tight">Location details</h1>
       <p className="mt-2 text-slate-600">
         {request.status === REQUEST_STATUSES.ACCEPTED
-          ? "The assigned Runner can see these changes immediately. Details lock when work starts."
-          : "These details become visible only to the Runner who accepts your request."}
+          ? "The assigned Runner can see private detail changes immediately. All location details lock when work starts."
+          : "The approximate area is public; exact addresses become visible only to the Runner who accepts."}
       </p>
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>Pickup, delivery, and contact</CardTitle>
+          <CardTitle>Public area and private fulfillment</CardTitle>
           <CardDescription>
-            Provide only the information needed to complete the task.
+            The shaded map area helps discovery. Exact addresses and contact
+            details remain participant-only.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -171,6 +175,14 @@ export function EditRequestLocationPage() {
             className="space-y-6"
             noValidate
           >
+            <ApproximateLocationPicker
+              control={control}
+              register={register}
+              setValue={setValue}
+              trigger={trigger}
+              errors={errors}
+              idPrefix="locationOnly"
+            />
             <RequestLocationFields
               register={register}
               errors={errors}

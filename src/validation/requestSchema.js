@@ -7,19 +7,52 @@ const moneySchema = z.coerce
   .min(0, "Amount cannot be negative.")
   .max(9999999999.99, "Amount is too large.");
 
+const optionalCoordinateSchema = z.preprocess((value) => {
+  if (value === "" || value === null || value === undefined) return null;
+  return Number(value);
+}, z.number().finite("Choose a valid map location.").nullable());
+
 export const requestLocationSchema = z
   .object({
     fulfillmentType: z.enum(Object.values(FULFILLMENT_TYPES), {
       message: "Choose how this request will be fulfilled.",
     }),
-    pickupAddress: z.string().trim().max(300, "Pickup address must be 300 characters or fewer."),
-    pickupLandmark: z.string().trim().max(200, "Pickup landmark must be 200 characters or fewer."),
-    pickupInstructions: z.string().trim().max(500, "Pickup instructions must be 500 characters or fewer."),
-    deliveryAddress: z.string().trim().max(300, "Delivery address must be 300 characters or fewer."),
-    deliveryLandmark: z.string().trim().max(200, "Delivery landmark must be 200 characters or fewer."),
-    deliveryInstructions: z.string().trim().max(500, "Delivery instructions must be 500 characters or fewer."),
-    contactName: z.string().trim().min(2, "Enter a contact name.").max(120, "Contact name must be 120 characters or fewer."),
-    contactPhone: z.string().trim().min(7, "Enter a valid contact phone number.").max(30, "Contact phone number must be 30 characters or fewer."),
+    pickupAddress: z
+      .string()
+      .trim()
+      .max(300, "Pickup address must be 300 characters or fewer."),
+    pickupLandmark: z
+      .string()
+      .trim()
+      .max(200, "Pickup landmark must be 200 characters or fewer."),
+    pickupInstructions: z
+      .string()
+      .trim()
+      .max(500, "Pickup instructions must be 500 characters or fewer."),
+    deliveryAddress: z
+      .string()
+      .trim()
+      .max(300, "Delivery address must be 300 characters or fewer."),
+    deliveryLandmark: z
+      .string()
+      .trim()
+      .max(200, "Delivery landmark must be 200 characters or fewer."),
+    deliveryInstructions: z
+      .string()
+      .trim()
+      .max(500, "Delivery instructions must be 500 characters or fewer."),
+    contactName: z
+      .string()
+      .trim()
+      .min(2, "Enter a contact name.")
+      .max(120, "Contact name must be 120 characters or fewer."),
+    contactPhone: z
+      .string()
+      .trim()
+      .min(7, "Enter a valid contact phone number.")
+      .max(30, "Contact phone number must be 30 characters or fewer."),
+    approximateLatitude: optionalCoordinateSchema,
+    approximateLongitude: optionalCoordinateSchema,
   })
   .superRefine((values, context) => {
     const needsPickup = [
@@ -47,13 +80,56 @@ export const requestLocationSchema = z
         message: "Enter the exact delivery or destination address.",
       });
     }
+
+    const hasLatitude = values.approximateLatitude !== null;
+    const hasLongitude = values.approximateLongitude !== null;
+    if (hasLatitude !== hasLongitude) {
+      context.addIssue({
+        code: "custom",
+        path: ["approximateLatitude"],
+        message:
+          "The approximate area is incomplete. Choose it again or clear it.",
+      });
+    }
+    if (
+      hasLatitude &&
+      (values.approximateLatitude < -90 || values.approximateLatitude > 90)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["approximateLatitude"],
+        message: "Latitude must be between -90 and 90.",
+      });
+    }
+    if (
+      hasLongitude &&
+      (values.approximateLongitude < -180 || values.approximateLongitude > 180)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["approximateLongitude"],
+        message: "Longitude must be between -180 and 180.",
+      });
+    }
   });
 
 const requestDetailsSchema = z.object({
   categoryId: z.string().min(1, "Choose a task category."),
-  title: z.string().trim().min(5, "Title must be at least 5 characters.").max(120, "Title must be 120 characters or fewer."),
-  description: z.string().trim().min(10, "Describe the task in at least 10 characters.").max(2000, "Description must be 2,000 characters or fewer."),
-  area: z.string().trim().min(2, "Enter the general service area.").max(160, "Area must be 160 characters or fewer."),
+  title: z
+    .string()
+    .trim()
+    .min(5, "Title must be at least 5 characters.")
+    .max(120, "Title must be 120 characters or fewer."),
+  description: z
+    .string()
+    .trim()
+    .min(10, "Describe the task in at least 10 characters.")
+    .max(2000, "Description must be 2,000 characters or fewer."),
+  area: z
+    .string()
+    .trim()
+    .min(2, "Enter the general service area.")
+    .max(160, "Area must be 160 characters or fewer."),
   expenseBudget: moneySchema,
   serviceFee: moneySchema,
   dueAt: z.string().refine((value) => {
@@ -66,7 +142,11 @@ const requestDetailsSchema = z.object({
 export const requestSchema = requestDetailsSchema.and(requestLocationSchema);
 
 export const cancelRequestSchema = z.object({
-  reason: z.string().trim().min(5, "Explain the cancellation in at least 5 characters.").max(500, "Reason must be 500 characters or fewer."),
+  reason: z
+    .string()
+    .trim()
+    .min(5, "Explain the cancellation in at least 5 characters.")
+    .max(500, "Reason must be 500 characters or fewer."),
 });
 
 export const releaseTaskSchema = z.object({
