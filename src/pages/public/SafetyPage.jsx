@@ -159,6 +159,14 @@ export function SafetyPage() {
           Ratings and activity summaries provide context only; they are not
           proof of identity, safety, or fault.
         </p>
+        <p>
+          Admins can restrict new activity or place an account into read-only
+          suspension or permanent-ban status after recording a reason. The app
+          does not delete transaction history through these controls. Affected
+          users can still review existing records and submit a relevant dispute
+          or private safety report; these tools are not emergency assistance or
+          a guaranteed appeal process.
+        </p>
       </LegalSection>
 
       <LegalSection

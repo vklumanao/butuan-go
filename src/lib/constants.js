@@ -4,6 +4,18 @@ export const USER_ROLES = Object.freeze({
   ADMIN: "admin",
 });
 
+export const ACCOUNT_ACCESS_LEVELS = Object.freeze({
+  RESTRICTED: "RESTRICTED",
+  SUSPENDED: "SUSPENDED",
+  BANNED: "BANNED",
+});
+
+export const ACCOUNT_ACCESS_LABELS = Object.freeze({
+  [ACCOUNT_ACCESS_LEVELS.RESTRICTED]: "Restricted",
+  [ACCOUNT_ACCESS_LEVELS.SUSPENDED]: "Suspended",
+  [ACCOUNT_ACCESS_LEVELS.BANNED]: "Permanently banned",
+});
+
 export const ROLE_LABELS = {
   [USER_ROLES.REQUESTOR]: "Requestor",
   [USER_ROLES.RUNNER]: "Runner",

@@ -156,14 +156,16 @@ export function PrivacyPage() {
         </p>
         <p>
           Failed-delivery reports, Requestor acknowledgements, disputes,
-          dispute outcomes, and temporary account restrictions may be retained
-          with their reasons, descriptions, involved accounts, and timestamps.
+          dispute outcomes, and account restrictions, suspensions, permanent
+          bans, and restorations may be retained with their reasons,
+          descriptions, involved accounts, and timestamps.
           The participants can view the records relevant to their shared
           request. Authorized Admin accounts can review a limited operations
           directory containing account name, email, roles, onboarding state,
-          request participation counts, and active restriction state. They can
-          also review disputes, record outcomes or restrictions, and view the
-          resulting Admin audit events through protected backend functions.
+          request participation counts, and active account-control state. They
+          can also review disputes, record outcomes or access controls, restore
+          access, and view the resulting Admin audit events through protected
+          backend functions.
           The Admin request directory intentionally excludes exact private
           pickup and delivery addresses.
         </p>

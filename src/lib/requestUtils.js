@@ -128,6 +128,10 @@ export function getFriendlyRequestError(
     return "Review the uploaded purchase receipts before confirming completion.";
   if (message.includes("temporarily restricted"))
     return "This account is temporarily restricted from creating or accepting new requests.";
+  if (message.includes("read-only because it is suspended"))
+    return "This account is suspended. Marketplace actions are read-only until the suspension ends.";
+  if (message.includes("read-only because it is permanently banned"))
+    return "This account is permanently banned from marketplace actions.";
   if (message.includes("verify the handoff code"))
     return "Verify the six-digit handoff code before continuing.";
   if (message.includes("no handoff code"))

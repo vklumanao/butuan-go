@@ -1,23 +1,108 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { Search, ShieldBan, ShieldCheck } from "lucide-react";
+import {
+  LoaderCircle,
+  LockKeyhole,
+  Search,
+  Settings2,
+  ShieldAlert,
+  ShieldBan,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
-  clearAdminAccountRestriction,
   listAdminAccounts,
+  restoreAdminAccountAccess,
+  setAdminAccountAccess,
 } from "@/services/adminService";
 import { devLog } from "@/lib/errors";
 import { formatDateTime } from "@/lib/requestUtils";
-import { ROLE_LABELS } from "@/lib/constants";
+import {
+  ACCOUNT_ACCESS_LABELS,
+  ACCOUNT_ACCESS_LEVELS,
+  ROLE_LABELS,
+  USER_ROLES,
+} from "@/lib/constants";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import {
   AdminEmptyState,
   AdminErrorState,
   AdminLoadingState,
 } from "@/components/admin/AdminState";
+import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
+function getAccountAccessLevel(account) {
+  if (account.access_level) return account.access_level;
+  return account.restriction_reason
+    ? ACCOUNT_ACCESS_LEVELS.RESTRICTED
+    : null;
+}
+
+function getRemainingDays(value) {
+  const end = new Date(value).getTime();
+  if (!Number.isFinite(end)) return 7;
+  return Math.min(
+    365,
+    Math.max(1, Math.ceil((end - Date.now()) / (24 * 60 * 60 * 1000))),
+  );
+}
+
+function AccessBadge({ account }) {
+  if (account.role === USER_ROLES.ADMIN) {
+    return (
+      <Badge className="bg-violet-100 text-violet-800">
+        <ShieldCheck className="h-3.5 w-3.5" />
+        Protected Admin
+      </Badge>
+    );
+  }
+
+  const accessLevel = getAccountAccessLevel(account);
+  if (accessLevel === ACCOUNT_ACCESS_LEVELS.BANNED) {
+    return (
+      <Badge className="bg-red-200 text-red-950">
+        <ShieldBan className="h-3.5 w-3.5" />
+        Permanently banned
+      </Badge>
+    );
+  }
+  if (accessLevel === ACCOUNT_ACCESS_LEVELS.SUSPENDED) {
+    return (
+      <Badge className="bg-red-100 text-red-800">
+        <LockKeyhole className="h-3.5 w-3.5" />
+        Suspended
+      </Badge>
+    );
+  }
+  if (accessLevel === ACCOUNT_ACCESS_LEVELS.RESTRICTED) {
+    return (
+      <Badge className="bg-amber-100 text-amber-900">
+        <ShieldAlert className="h-3.5 w-3.5" />
+        Restricted
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="bg-emerald-100 text-emerald-800">
+      <ShieldCheck className="h-3.5 w-3.5" />
+      Active
+    </Badge>
+  );
+}
 
 export function AdminUsersPage() {
   const [search, setSearch] = useState("");
@@ -25,7 +110,15 @@ export function AdminUsersPage() {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [clearingId, setClearingId] = useState(null);
+  const [selectedAccount, setSelectedAccount] = useState(null);
+  const [accessLevel, setAccessLevel] = useState(
+    ACCOUNT_ACCESS_LEVELS.RESTRICTED,
+  );
+  const [durationDays, setDurationDays] = useState("7");
+  const [reason, setReason] = useState("");
+  const [banConfirmation, setBanConfirmation] = useState("");
+  const [manageError, setManageError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const loadAccounts = useCallback(async () => {
     setLoading(true);
@@ -52,20 +145,93 @@ export function AdminUsersPage() {
     setSubmittedSearch(search.trim());
   }
 
-  async function clearRestriction(account) {
-    const confirmed = window.confirm(
-      `Clear the active restriction for ${account.full_name}? This action will be added to the Admin audit log.`,
+  function openManage(account) {
+    const currentAccess =
+      getAccountAccessLevel(account) || ACCOUNT_ACCESS_LEVELS.RESTRICTED;
+    setSelectedAccount(account);
+    setAccessLevel(currentAccess);
+    setDurationDays(
+      currentAccess === ACCOUNT_ACCESS_LEVELS.BANNED
+        ? "7"
+        : String(getRemainingDays(account.restricted_until)),
     );
-    if (!confirmed) return;
-    setClearingId(account.id);
-    const { error: clearError } = await clearAdminAccountRestriction(account.id);
-    setClearingId(null);
-    if (clearError) {
-      devLog("Admin restriction clearing failed", clearError);
-      toast.error("The account restriction could not be cleared.");
+    setReason(account.restriction_reason || "");
+    setBanConfirmation("");
+    setManageError("");
+  }
+
+  function changeManageDialog(open) {
+    if (!open && !saving) setSelectedAccount(null);
+  }
+
+  async function saveAccessControl() {
+    const trimmedReason = reason.trim();
+    const days = Number(durationDays);
+    setManageError("");
+
+    if (trimmedReason.length < 10) {
+      setManageError("Enter a factual reason with at least 10 characters.");
       return;
     }
-    toast.success("The account restriction has been cleared.");
+    if (
+      accessLevel !== ACCOUNT_ACCESS_LEVELS.BANNED &&
+      (!Number.isInteger(days) || days < 1 || days > 365)
+    ) {
+      setManageError("Temporary controls require 1 to 365 whole days.");
+      return;
+    }
+    if (
+      accessLevel === ACCOUNT_ACCESS_LEVELS.BANNED &&
+      banConfirmation !== "BAN"
+    ) {
+      setManageError('Type "BAN" to confirm the permanent account control.');
+      return;
+    }
+
+    setSaving(true);
+    const { error: saveError } = await setAdminAccountAccess({
+      accountId: selectedAccount.id,
+      accessLevel,
+      reason: trimmedReason,
+      durationDays:
+        accessLevel === ACCOUNT_ACCESS_LEVELS.BANNED ? null : days,
+    });
+    setSaving(false);
+    if (saveError) {
+      devLog("Admin account access update failed", saveError);
+      setManageError(
+        saveError.message || "The account control could not be saved.",
+      );
+      return;
+    }
+
+    setSelectedAccount(null);
+    toast.success("The account control was recorded and the user was notified.");
+    loadAccounts();
+  }
+
+  async function restoreAccess() {
+    const confirmed = window.confirm(
+      `Restore normal marketplace access for ${selectedAccount.full_name}? This action will be added to the Admin audit log.`,
+    );
+    if (!confirmed) return;
+
+    setSaving(true);
+    setManageError("");
+    const { error: restoreError } = await restoreAdminAccountAccess(
+      selectedAccount.id,
+    );
+    setSaving(false);
+    if (restoreError) {
+      devLog("Admin account restoration failed", restoreError);
+      setManageError(
+        restoreError.message || "The account access could not be restored.",
+      );
+      return;
+    }
+
+    setSelectedAccount(null);
+    toast.success("Normal account access was restored.");
     loadAccounts();
   }
 
@@ -73,7 +239,7 @@ export function AdminUsersPage() {
     <div className="mx-auto max-w-7xl p-4 sm:p-8">
       <AdminPageHeader
         title="Account directory"
-        description="Review onboarding state, marketplace participation, and active restrictions. Admin access itself remains backend-provisioned."
+        description="Review account participation and apply reversible, audited access controls without deleting transaction history."
       />
 
       <Card className="mt-8">
@@ -98,7 +264,9 @@ export function AdminUsersPage() {
       </Card>
 
       <div className="mt-6">
-        {loading && <AdminLoadingState message="Loading account directory..." />}
+        {loading && (
+          <AdminLoadingState message="Loading account directory..." />
+        )}
         {!loading && error && (
           <AdminErrorState message={error} onRetry={loadAccounts} />
         )}
@@ -126,7 +294,7 @@ export function AdminUsersPage() {
                   <table className="w-full min-w-[1040px] border-collapse text-left text-sm">
                     <caption className="sr-only">
                       ButuanGo account directory with roles, participation, and
-                      restriction controls
+                      account access controls
                     </caption>
                     <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                       <tr>
@@ -158,13 +326,13 @@ export function AdminUsersPage() {
                     </thead>
                     <tbody className="divide-y divide-slate-200 bg-white">
                       {accounts.map((account) => {
-                        const restricted = Boolean(account.restricted_until);
+                        const accountAccess = getAccountAccessLevel(account);
                         return (
                           <Fragment key={account.id}>
                             <tr
                               className={
-                                restricted
-                                  ? "bg-red-50/40 align-top"
+                                accountAccess
+                                  ? "bg-amber-50/40 align-top"
                                   : "align-top hover:bg-slate-50/70"
                               }
                             >
@@ -213,49 +381,38 @@ export function AdminUsersPage() {
                                 {formatDateTime(account.created_at, "")}
                               </td>
                               <td className="px-4 py-4">
-                                {restricted ? (
-                                  <Badge className="bg-red-100 text-red-800">
-                                    <ShieldBan className="h-3.5 w-3.5" />
-                                    Restricted
-                                  </Badge>
-                                ) : (
-                                  <Badge className="bg-emerald-100 text-emerald-800">
-                                    <ShieldCheck className="h-3.5 w-3.5" />
-                                    Active
-                                  </Badge>
-                                )}
+                                <AccessBadge account={account} />
                               </td>
                               <td className="px-5 py-4 text-right">
-                                {restricted ? (
+                                {account.role === USER_ROLES.ADMIN ? (
+                                  <span className="text-xs text-slate-400">
+                                    Backend-managed
+                                  </span>
+                                ) : (
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => clearRestriction(account)}
-                                    disabled={clearingId === account.id}
+                                    onClick={() => openManage(account)}
                                   >
-                                    {clearingId === account.id
-                                      ? "Clearing..."
-                                      : "Clear restriction"}
+                                    <Settings2 className="h-4 w-4" />
+                                    Manage
                                   </Button>
-                                ) : (
-                                  <span className="text-xs text-slate-400">
-                                    No action needed
-                                  </span>
                                 )}
                               </td>
                             </tr>
-                            {restricted && (
-                              <tr className="bg-red-50/70">
+                            {accountAccess && (
+                              <tr className="bg-amber-50/70">
                                 <td colSpan={7} className="px-5 pb-4 pt-0">
-                                  <div className="rounded-lg border border-red-200 bg-white px-4 py-3 text-xs text-red-900">
+                                  <div className="rounded-lg border border-amber-200 bg-white px-4 py-3 text-xs text-amber-950">
                                     <span className="font-bold">
-                                      Restricted until{" "}
-                                      {formatDateTime(
-                                        account.restricted_until,
-                                        "",
-                                      )}
+                                      {ACCOUNT_ACCESS_LABELS[accountAccess] ||
+                                        accountAccess}
+                                      {accountAccess ===
+                                      ACCOUNT_ACCESS_LEVELS.BANNED
+                                        ? " - no automatic expiration"
+                                        : ` until ${formatDateTime(account.restricted_until, "")}`}
                                     </span>
-                                    <span className="mx-2 text-red-300">·</span>
+                                    <span className="mx-2 text-amber-300">·</span>
                                     <span>{account.restriction_reason}</span>
                                   </div>
                                 </td>
@@ -272,6 +429,134 @@ export function AdminUsersPage() {
           </div>
         )}
       </div>
+
+      <Dialog open={Boolean(selectedAccount)} onOpenChange={changeManageDialog}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Manage account access</DialogTitle>
+            <DialogDescription>
+              Apply a documented marketplace control to{" "}
+              {selectedAccount?.full_name}. This does not delete their Google
+              login, profile, or transaction history.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedAccount && (
+            <div className="space-y-5">
+              {manageError && (
+                <Alert variant="destructive">{manageError}</Alert>
+              )}
+
+              <Alert className="border-amber-200 bg-amber-50 text-amber-950">
+                Restriction blocks new activity but permits existing
+                responsibilities. Suspension and permanent ban are read-only
+                and will be rejected while unfinished requests exist.
+              </Alert>
+
+              <div>
+                <Label htmlFor="accountAccessLevel">Access control</Label>
+                <select
+                  id="accountAccessLevel"
+                  value={accessLevel}
+                  onChange={(event) => {
+                    setAccessLevel(event.target.value);
+                    setBanConfirmation("");
+                  }}
+                  className="mt-2 h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+                >
+                  <option value={ACCOUNT_ACCESS_LEVELS.RESTRICTED}>
+                    Restricted - no new requests or tasks
+                  </option>
+                  <option value={ACCOUNT_ACCESS_LEVELS.SUSPENDED}>
+                    Suspended - temporary read-only access
+                  </option>
+                  <option value={ACCOUNT_ACCESS_LEVELS.BANNED}>
+                    Permanently banned - read-only, no expiration
+                  </option>
+                </select>
+              </div>
+
+              {accessLevel !== ACCOUNT_ACCESS_LEVELS.BANNED && (
+                <div>
+                  <Label htmlFor="accountControlDays">Duration in days</Label>
+                  <Input
+                    id="accountControlDays"
+                    type="number"
+                    min="1"
+                    max="365"
+                    step="1"
+                    className="mt-2"
+                    value={durationDays}
+                    onChange={(event) => setDurationDays(event.target.value)}
+                  />
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="accountControlReason">Factual reason</Label>
+                <Textarea
+                  id="accountControlReason"
+                  value={reason}
+                  onChange={(event) => setReason(event.target.value)}
+                  className="mt-2 min-h-32"
+                  maxLength={1000}
+                  placeholder="Record the relevant behavior, evidence reviewed, and reason for this control."
+                />
+                <p className="mt-1 text-right text-xs text-slate-500">
+                  {reason.length}/1000
+                </p>
+              </div>
+
+              {accessLevel === ACCOUNT_ACCESS_LEVELS.BANNED && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                  <Label htmlFor="permanentBanConfirmation">
+                    Type BAN to confirm
+                  </Label>
+                  <Input
+                    id="permanentBanConfirmation"
+                    value={banConfirmation}
+                    onChange={(event) =>
+                      setBanConfirmation(event.target.value.toUpperCase())
+                    }
+                    className="mt-2 border-red-300"
+                    autoComplete="off"
+                  />
+                  <p className="mt-2 text-xs leading-5 text-red-900">
+                    Permanent bans have no automatic expiration. Another Admin
+                    action is required to restore access.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:justify-between">
+            <div>
+              {selectedAccount && getAccountAccessLevel(selectedAccount) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={restoreAccess}
+                  disabled={saving}
+                >
+                  Restore normal access
+                </Button>
+              )}
+            </div>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <DialogClose asChild>
+                <Button variant="outline" disabled={saving}>
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button onClick={saveAccessControl} disabled={saving}>
+                {saving && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                {saving ? "Saving..." : "Save account control"}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
