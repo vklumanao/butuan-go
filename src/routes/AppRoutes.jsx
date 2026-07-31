@@ -30,6 +30,7 @@ import { AdminRequestsPage } from "@/pages/admin/AdminRequestsPage";
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { AdminDisputesPage } from "@/pages/admin/AdminDisputesPage";
 import { AdminAuditPage } from "@/pages/admin/AdminAuditPage";
+import { AdminReportsPage } from "@/pages/admin/AdminReportsPage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export function AppRoutes() {
@@ -109,6 +110,7 @@ export function AppRoutes() {
             <Route path="/admin/requests" element={<AdminRequestsPage />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/disputes" element={<AdminDisputesPage />} />
+            <Route path="/admin/reports" element={<AdminReportsPage />} />
             <Route path="/admin/audit" element={<AdminAuditPage />} />
             <Route path="/admin/profile" element={<ProfilePage />} />
           </Route>

@@ -635,6 +635,7 @@ export function RunnerRequestDetailsPage() {
             <RequestParticipantCard
               participant={requestorParticipant}
               type="requestor"
+              requestId={request.id}
             />
           )}
           <Card>

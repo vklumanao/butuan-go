@@ -410,6 +410,7 @@ export function RequestDetailsPage() {
             participant={assignedRunner}
             type="runner"
             acceptedAt={request.accepted_at}
+            requestId={request.id}
           />
           <Card>
             <CardHeader className="p-5 pb-3 sm:p-6 sm:pb-3">

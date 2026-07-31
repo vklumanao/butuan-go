@@ -10,8 +10,10 @@ import {
   ClipboardCheck,
   KeyRound,
   MapPin,
+  Flag,
   Scale,
   ShieldAlert,
+  Star,
   Play,
   RefreshCw,
   RotateCcw,
@@ -113,6 +115,14 @@ const notificationVisuals = {
   ACCOUNT_RESTRICTED: {
     icon: ShieldAlert,
     iconClass: "bg-red-100 text-red-700 ring-red-200",
+  },
+  RATING_RECEIVED: {
+    icon: Star,
+    iconClass: "bg-amber-100 text-amber-700 ring-amber-200",
+  },
+  SAFETY_REPORT_RESOLVED: {
+    icon: Flag,
+    iconClass: "bg-violet-100 text-violet-700 ring-violet-200",
   },
 };
 

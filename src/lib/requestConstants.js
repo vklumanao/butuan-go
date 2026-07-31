@@ -126,3 +126,25 @@ export const DISPUTE_STATUS_LABELS = Object.freeze({
   RESOLVED: "Resolved",
   DISMISSED: "Dismissed",
 });
+
+export const ACCOUNT_REPORT_CATEGORIES = Object.freeze({
+  HARASSMENT: "HARASSMENT",
+  SPAM: "SPAM",
+  IMPERSONATION: "IMPERSONATION",
+  UNSAFE_BEHAVIOR: "UNSAFE_BEHAVIOR",
+  OTHER: "OTHER",
+});
+
+export const ACCOUNT_REPORT_CATEGORY_LABELS = Object.freeze({
+  [ACCOUNT_REPORT_CATEGORIES.HARASSMENT]: "Harassment or threats",
+  [ACCOUNT_REPORT_CATEGORIES.SPAM]: "Spam or fake activity",
+  [ACCOUNT_REPORT_CATEGORIES.IMPERSONATION]: "Impersonation",
+  [ACCOUNT_REPORT_CATEGORIES.UNSAFE_BEHAVIOR]: "Unsafe behavior",
+  [ACCOUNT_REPORT_CATEGORIES.OTHER]: "Other safety concern",
+});
+
+export const ACCOUNT_REPORT_STATUS_LABELS = Object.freeze({
+  OPEN: "Open - awaiting review",
+  ACTIONED: "Action taken",
+  DISMISSED: "Dismissed",
+});

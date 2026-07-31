@@ -168,6 +168,23 @@ export function PrivacyPage() {
           pickup and delivery addresses.
         </p>
         <p>
+          After a completed request, participants may submit one transaction
+          rating. Assigned participants can see a limited aggregate trust
+          summary, including rating count and request outcome counts. Rating
+          comments are retained with the related request but are not published
+          as a public review feed. A user-created block is private and affects
+          future matching only.
+        </p>
+        <p>
+          Safety reports store the reporter, reported account, related request,
+          category, factual description, review outcome, and timestamps. The
+          reported account cannot read the private report record. Authorized
+          Admin accounts can review it, record an outcome, and apply a
+          temporary restriction. Reports and ratings must not contain
+          passwords, banking credentials, government ID images, or unrelated
+          personal information.
+        </p>
+        <p>
           ButuanGo does not collect card numbers, bank credentials, wallet
           access, or payment account data. Participants settle directly in
           person. The app records what each participant confirms, but it cannot

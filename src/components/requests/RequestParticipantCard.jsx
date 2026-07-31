@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/requestUtils";
+import { ParticipantTrustPanel } from "./ParticipantTrustPanel";
 
 function initials(name) {
   return (
@@ -19,6 +20,7 @@ export function RequestParticipantCard({
   participant,
   type,
   acceptedAt = null,
+  requestId = null,
 }) {
   const isRunner = type === "runner";
   const title = isRunner ? "Assigned Runner" : "Requestor";
@@ -106,6 +108,14 @@ export function RequestParticipantCard({
             available in this milestone.
           </p>
         </div>
+
+        {requestId && (
+          <ParticipantTrustPanel
+            requestId={requestId}
+            participant={participant}
+            type={type}
+          />
+        )}
       </CardContent>
     </Card>
   );

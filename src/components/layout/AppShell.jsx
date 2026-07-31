@@ -12,6 +12,7 @@ import {
   PanelLeftOpen,
   Search,
   Scale,
+  ShieldAlert,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -58,6 +59,7 @@ function getPageTitle(pathname) {
   if (pathname === "/admin/requests") return "Request Oversight";
   if (pathname === "/admin/users") return "Account Directory";
   if (pathname === "/admin/disputes") return "Dispute Review";
+  if (pathname === "/admin/reports") return "Safety Reports";
   if (pathname === "/admin/audit") return "Admin Audit Log";
   if (pathname === "/admin/profile") return "Admin Profile";
   if (pathname.endsWith("/dashboard")) return "Dashboard";
@@ -108,6 +110,7 @@ export function AppShell() {
           { to: "/admin/dashboard", label: "Overview", icon: LayoutDashboard },
           { to: "/admin/requests", label: "Requests", icon: ClipboardList },
           { to: "/admin/disputes", label: "Disputes", icon: Scale },
+          { to: "/admin/reports", label: "Safety Reports", icon: ShieldAlert },
           { to: "/admin/users", label: "Accounts", icon: UsersRound },
           { to: "/admin/audit", label: "Audit Log", icon: Activity },
           { to: "/admin/profile", label: "Profile", icon: UserRound },

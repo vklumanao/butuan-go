@@ -91,6 +91,16 @@ export function getFriendlyRequestError(
     return "Only a signed-in Requestor can perform this action.";
   if (message.includes("no longer available"))
     return "This request is no longer available.";
+  if (message.includes("blocked future matching"))
+    return "This request is unavailable because one participant blocked future matching.";
+  if (message.includes("daily request limit"))
+    return "You reached the daily request limit. Try again after 24 hours.";
+  if (message.includes("request limit reached"))
+    return "You have created several requests recently. Wait a few minutes before trying again.";
+  if (message.includes("complete or cancel an open request"))
+    return "You can have up to five open requests. Complete or cancel one before creating another.";
+  if (message.includes("limited after repeated cancellations"))
+    return "New requests are temporarily limited after repeated cancellations. Try again after 24 hours.";
   if (message.includes("finish or submit your current task"))
     return "Finish or submit your current task before accepting another request.";
   if (message.includes("can no longer be edited"))
