@@ -224,6 +224,35 @@ textarea {
   box-shadow: 0 14px 35px rgb(15 23 42 / 0.2);
 }
 
+.maplibregl-popup-close-button {
+  top: 8px;
+  right: 8px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.maplibregl-popup-close-button:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.maplibregl-popup-close-button:focus-visible {
+  outline: 2px solid #009688;
+  outline-offset: 2px;
+}
+
 .butuango-map-popup {
   width: 250px;
   padding: 16px;
@@ -232,6 +261,7 @@ textarea {
 }
 
 .butuango-map-popup__privacy {
+  padding-right: 48px;
   color: #007a70;
   font-size: 11px;
   font-weight: 800;
@@ -240,7 +270,7 @@ textarea {
 }
 
 .butuango-map-popup__title {
-  margin: 6px 22px 0 0;
+  margin: 6px 48px 0 0;
   font-size: 16px;
   font-weight: 800;
   line-height: 1.35;

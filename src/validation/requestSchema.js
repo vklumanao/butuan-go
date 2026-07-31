@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { FULFILLMENT_TYPES } from "@/lib/requestConstants";
+import {
+  FULFILLMENT_TYPES,
+  PAYMENT_ARRANGEMENTS,
+  PAYMENT_PAYER_TYPES,
+} from "@/lib/requestConstants";
 
 const moneySchema = z.coerce
   .number({ message: "Enter a valid amount." })
@@ -113,33 +117,117 @@ export const requestLocationSchema = z
     }
   });
 
-const requestDetailsSchema = z.object({
-  categoryId: z.string().min(1, "Choose a task category."),
-  title: z
-    .string()
-    .trim()
-    .min(5, "Title must be at least 5 characters.")
-    .max(120, "Title must be 120 characters or fewer."),
-  description: z
-    .string()
-    .trim()
-    .min(10, "Describe the task in at least 10 characters.")
-    .max(2000, "Description must be 2,000 characters or fewer."),
-  area: z
-    .string()
-    .trim()
-    .min(2, "Enter the general service area.")
-    .max(160, "Area must be 160 characters or fewer."),
-  expenseBudget: moneySchema,
-  serviceFee: moneySchema,
-  dueAt: z.string().refine((value) => {
-    if (!value) return true;
-    const date = new Date(value);
-    return !Number.isNaN(date.getTime()) && date.getTime() > Date.now();
-  }, "Due date and time must be in the future."),
-});
+const requestDetailsSchema = z
+  .object({
+    categoryId: z.string().min(1, "Choose a task category."),
+    title: z
+      .string()
+      .trim()
+      .min(5, "Title must be at least 5 characters.")
+      .max(120, "Title must be 120 characters or fewer."),
+    description: z
+      .string()
+      .trim()
+      .min(10, "Describe the task in at least 10 characters.")
+      .max(2000, "Description must be 2,000 characters or fewer."),
+    area: z
+      .string()
+      .trim()
+      .min(2, "Enter the general service area.")
+      .max(160, "Area must be 160 characters or fewer."),
+    expenseBudget: moneySchema,
+    serviceFee: moneySchema,
+    paymentArrangement: z.enum(Object.values(PAYMENT_ARRANGEMENTS), {
+      message: "Choose how purchase expenses will be handled.",
+    }),
+    payerType: z.enum(Object.values(PAYMENT_PAYER_TYPES), {
+      message: "Choose who will pay the Runner.",
+    }),
+    payerName: z
+      .string()
+      .trim()
+      .max(120, "Payer name must be 120 characters or fewer."),
+    payerPhone: z
+      .string()
+      .trim()
+      .max(30, "Payer phone number must be 30 characters or fewer."),
+    merchantReference: z
+      .string()
+      .trim()
+      .max(160, "Merchant reference must be 160 characters or fewer."),
+    dueAt: z.string().refine((value) => {
+      if (!value) return true;
+      const date = new Date(value);
+      return !Number.isNaN(date.getTime()) && date.getTime() > Date.now();
+    }, "Due date and time must be in the future."),
+  })
+  .superRefine((values, context) => {
+    if (
+      values.paymentArrangement === PAYMENT_ARRANGEMENTS.NO_PURCHASE &&
+      values.expenseBudget !== 0
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["expenseBudget"],
+        message: "Set the expense to 0 when no purchase is required.",
+      });
+    }
+    if (
+      [
+        PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID,
+        PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE,
+      ].includes(values.paymentArrangement) &&
+      values.expenseBudget <= 0
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["expenseBudget"],
+        message: "Enter the expected purchase expense.",
+      });
+    }
+    if (
+      values.paymentArrangement === PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID &&
+      values.merchantReference.length < 2
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["merchantReference"],
+        message: "Enter the prepaid merchant or order reference.",
+      });
+    }
+    if (values.payerType === PAYMENT_PAYER_TYPES.RECIPIENT) {
+      if (values.payerName.length < 2) {
+        context.addIssue({
+          code: "custom",
+          path: ["payerName"],
+          message: "Enter the name of the person who will pay.",
+        });
+      }
+      if (values.payerPhone.length < 7) {
+        context.addIssue({
+          code: "custom",
+          path: ["payerPhone"],
+          message: "Enter a valid phone number for the person who will pay.",
+        });
+      }
+    }
+  });
 
-export const requestSchema = requestDetailsSchema.and(requestLocationSchema);
+export const requestSchema = requestDetailsSchema
+  .and(requestLocationSchema)
+  .superRefine((values, context) => {
+    if (
+      values.fulfillmentType === FULFILLMENT_TYPES.PURCHASE_AND_DELIVER &&
+      values.paymentArrangement === PAYMENT_ARRANGEMENTS.NO_PURCHASE
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["paymentArrangement"],
+        message:
+          "Choose merchant prepaid or Runner cash advance for a purchase-and-deliver task.",
+      });
+    }
+  });
 
 export const cancelRequestSchema = z.object({
   reason: z

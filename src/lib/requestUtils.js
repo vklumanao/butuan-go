@@ -105,6 +105,50 @@ export function getFriendlyRequestError(
     return "This task is no longer in the accepted state and cannot be started.";
   if (message.includes("cannot be submitted"))
     return "This task is not currently eligible for completion submission.";
+  if (message.includes("pending price-change"))
+    return "Wait for the pending price-change decision or withdraw it first.";
+  if (message.includes("pending price change"))
+    return "Wait for the Requestor to decide the pending price change.";
+  if (
+    message.includes("upload at least one purchase receipt") ||
+    message.includes("has not uploaded purchase receipt")
+  )
+    return "At least one private purchase receipt is required for this task.";
+  if (message.includes("review the purchase receipts"))
+    return "Review the uploaded purchase receipts before confirming completion.";
+  if (message.includes("temporarily restricted"))
+    return "This account is temporarily restricted from creating or accepting new requests.";
+  if (message.includes("verify the handoff code"))
+    return "Verify the six-digit handoff code before continuing.";
+  if (message.includes("no handoff code"))
+    return "The handoff code is unavailable. Refresh the task and try again.";
+  if (message.includes("payment must match"))
+    return "The confirmed payment must match the documented amount.";
+  if (
+    message.includes("confirm receipt of the documented direct payment") ||
+    message.includes("has not confirmed the documented direct payment")
+  )
+    return "The Runner must confirm receiving the documented direct payment first.";
+  if (message.includes("selected payer settled"))
+    return "Confirm that the selected payer settled directly with the Runner.";
+  if (message.includes("open dispute"))
+    return "The open dispute must be withdrawn or resolved before continuing.";
+  if (message.includes("seven-day dispute window"))
+    return "The seven-day window for opening a dispute has ended.";
+  if (message.includes("cannot be opened at this request stage"))
+    return "A dispute cannot be opened at this stage of the request.";
+  if (message.includes("verified handoff cannot"))
+    return "A verified handoff can no longer be reported as failed.";
+  if (message.includes("paid handoff cannot"))
+    return "A handoff with confirmed payment can no longer be reported as failed.";
+  if (message.includes("receipt total exceeds"))
+    return "The receipt total is above the approved purchase limit. Request a higher limit before continuing.";
+  if (message.includes("current cash-advance limit"))
+    return "Confirm the current cash-advance limit before continuing.";
+  if (message.includes("already has a pending price-change"))
+    return "This task already has a price change waiting for the Requestor.";
+  if (message.includes("new maximum must be higher"))
+    return "Enter a new maximum that is higher than the current limit.";
   if (message.includes("not awaiting confirmation"))
     return "This request is no longer awaiting your confirmation.";
   if (message.includes("private location details are incomplete"))
@@ -117,6 +161,10 @@ export function getFriendlyRequestError(
     return "Enter a valid exact delivery or destination address.";
   if (message.includes("only an authenticated runner"))
     return "Only the assigned signed-in Runner can perform this action.";
+  if (message.includes("only the assigned runner"))
+    return "Only the assigned signed-in Runner can perform this action.";
+  if (message.includes("only the requestor can decide"))
+    return "Only the Requestor who posted this task can decide the price change.";
   if (message.includes("only the requestor"))
     return "Only the Requestor who posted this request can confirm completion.";
   if (message.includes("row-level security") || error?.code === "42501")

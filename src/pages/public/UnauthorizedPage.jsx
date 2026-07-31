@@ -1,14 +1,22 @@
 import { Link, useLocation } from "react-router-dom";
 import { ShieldX } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { getActiveRole, getDashboardPath } from "@/lib/constants";
+import {
+  getActiveRole,
+  getDashboardPath,
+  hasCompletedOnboarding,
+} from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 
 export function UnauthorizedPage() {
   const { profile, user } = useAuth();
   const location = useLocation();
   const target =
-    user && profile ? getDashboardPath(getActiveRole(profile)) : "/login";
+    user && profile
+      ? hasCompletedOnboarding(profile)
+        ? getDashboardPath(getActiveRole(profile))
+        : "/onboarding"
+      : "/login";
   return (
     <main className="grid min-h-screen place-items-center bg-slate-50 px-4 text-center">
       <div>

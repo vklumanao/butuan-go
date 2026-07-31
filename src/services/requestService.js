@@ -1,6 +1,9 @@
 import { supabase } from "@/lib/supabase";
 import { coarsenCoordinate } from "@/lib/geoUtils";
-import { REQUEST_STATUSES } from "@/lib/requestConstants";
+import {
+  PAYMENT_ARRANGEMENTS,
+  REQUEST_STATUSES,
+} from "@/lib/requestConstants";
 
 const REQUEST_SELECT = `
   id,
@@ -22,9 +25,19 @@ const REQUEST_SELECT = `
   submitted_at,
   completed_at,
   cancelled_at,
+  failed_at,
   created_at,
   updated_at,
-  category:categories(id, name, slug)
+  category:categories(id, name, slug),
+  payment_terms:request_payment_terms(
+    request_id,
+    arrangement,
+    payer_type,
+    maximum_advance,
+    runner_consented_at,
+    runner_consented_amount,
+    receipt_evidence_required
+  )
 `;
 
 function normalizeRpcRow(data) {
@@ -49,6 +62,16 @@ function locationRpcParams(values) {
   };
 }
 
+function paymentRpcParams(values) {
+  return {
+    p_payment_arrangement: values.paymentArrangement,
+    p_payer_type: values.payerType,
+    p_payer_name: values.payerName.trim() || null,
+    p_payer_phone: values.payerPhone.trim() || null,
+    p_merchant_reference: values.merchantReference.trim() || null,
+  };
+}
+
 export async function getCategories() {
   return supabase
     .from("categories")
@@ -60,7 +83,7 @@ export async function getCategories() {
 
 export async function createRequest(values) {
   const { data, error } = await supabase.rpc(
-    "create_request_with_location_and_geography",
+    "create_request_with_payment_terms",
     {
       p_category_id: Number(values.categoryId),
       p_title: values.title.trim(),
@@ -70,6 +93,7 @@ export async function createRequest(values) {
       p_service_fee: Number(values.serviceFee),
       p_due_at: values.dueAt ? new Date(values.dueAt).toISOString() : null,
       ...locationRpcParams(values),
+      ...paymentRpcParams(values),
     },
   );
   return { data: normalizeRpcRow(data), error };
@@ -77,7 +101,7 @@ export async function createRequest(values) {
 
 export async function updateOpenRequest(requestId, values) {
   const { data, error } = await supabase.rpc(
-    "update_open_request_with_location_and_geography",
+    "update_open_request_with_payment_terms",
     {
       p_request_id: requestId,
       p_category_id: Number(values.categoryId),
@@ -88,6 +112,7 @@ export async function updateOpenRequest(requestId, values) {
       p_service_fee: Number(values.serviceFee),
       p_due_at: values.dueAt ? new Date(values.dueAt).toISOString() : null,
       ...locationRpcParams(values),
+      ...paymentRpcParams(values),
     },
   );
   return { data: normalizeRpcRow(data), error };
@@ -101,6 +126,73 @@ export async function getRequestLocation(requestId) {
     )
     .eq("request_id", requestId)
     .maybeSingle();
+}
+
+export async function getRequestPaymentDetails(requestId) {
+  return supabase
+    .from("request_payment_details")
+    .select(
+      "request_id, payer_name, payer_phone, merchant_reference, created_at, updated_at",
+    )
+    .eq("request_id", requestId)
+    .maybeSingle();
+}
+
+export async function getRequestPriceChanges(requestId) {
+  return supabase
+    .from("request_price_changes")
+    .select(
+      "id, request_id, runner_id, previous_maximum, proposed_maximum, reason, status, response_note, resolved_at, created_at, updated_at",
+    )
+    .eq("request_id", requestId)
+    .order("created_at", { ascending: false });
+}
+
+export async function getRequestReceipts(requestId) {
+  return supabase
+    .from("request_receipts")
+    .select(
+      "id, request_id, uploaded_by, storage_path, file_name, mime_type, file_size, purchase_amount, note, created_at",
+    )
+    .eq("request_id", requestId)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+}
+
+export async function getRequestHandoffState(requestId) {
+  return supabase.rpc("get_request_handoff_state", {
+    p_request_id: requestId,
+  });
+}
+
+export async function getRequestSettlement(requestId) {
+  return supabase
+    .from("request_settlements")
+    .select(
+      "request_id, expected_amount, runner_received_amount, runner_confirmed_at, requestor_confirmed_at, created_at, updated_at",
+    )
+    .eq("request_id", requestId)
+    .maybeSingle();
+}
+
+export async function getRequestFailure(requestId) {
+  return supabase
+    .from("request_failures")
+    .select(
+      "id, request_id, reported_by, reason_code, description, acknowledged_at, acknowledgment_note, created_at, updated_at",
+    )
+    .eq("request_id", requestId)
+    .maybeSingle();
+}
+
+export async function getRequestDisputes(requestId) {
+  return supabase
+    .from("request_disputes")
+    .select(
+      "id, request_id, opened_by, reported_user_id, category, description, status, resolution_outcome, resolution_note, resolved_by, resolved_at, created_at, updated_at",
+    )
+    .eq("request_id", requestId)
+    .order("created_at", { ascending: false });
 }
 
 export async function saveRequestLocation(requestId, values) {
@@ -130,31 +222,224 @@ export async function releaseAcceptedRequest(requestId, reason) {
   return { data: normalizeRpcRow(data), error };
 }
 
-export async function acceptRequest(requestId) {
-  const { data, error } = await supabase.rpc("accept_request", {
+export async function acceptRequest(requestId, cashAdvanceConsent = false) {
+  const { data, error } = await supabase.rpc(
+    "accept_request_with_payment_terms",
+    {
+      p_request_id: requestId,
+      p_cash_advance_consent: cashAdvanceConsent,
+    },
+  );
+  return { data: normalizeRpcRow(data), error };
+}
+
+export async function confirmRequestCashAdvance(requestId) {
+  const { data, error } = await supabase.rpc(
+    "confirm_request_cash_advance",
+    {
+      p_request_id: requestId,
+    },
+  );
+  return { data: normalizeRpcRow(data), error };
+}
+
+export async function regenerateRequestHandoffCode(requestId) {
+  return supabase.rpc("regenerate_request_handoff_code", {
     p_request_id: requestId,
+  });
+}
+
+export async function verifyRequestHandoff(requestId, handoffCode) {
+  return supabase.rpc("verify_request_handoff", {
+    p_request_id: requestId,
+    p_handoff_code: handoffCode,
+  });
+}
+
+export async function confirmRequestSettlementReceived(requestId, amount) {
+  const { data, error } = await supabase.rpc(
+    "confirm_request_settlement_received",
+    {
+      p_request_id: requestId,
+      p_received_amount: Number(amount),
+    },
+  );
+  return { data: normalizeRpcRow(data), error };
+}
+
+export async function reportRequestFailure(
+  requestId,
+  reasonCode,
+  description,
+) {
+  const { data, error } = await supabase.rpc("report_request_failure", {
+    p_request_id: requestId,
+    p_reason_code: reasonCode,
+    p_description: description.trim(),
+  });
+  return { data: normalizeRpcRow(data), error };
+}
+
+export async function acknowledgeRequestFailure(failureId, note) {
+  const { data, error } = await supabase.rpc(
+    "acknowledge_request_failure",
+    {
+      p_failure_id: failureId,
+      p_note: note.trim() || null,
+    },
+  );
+  return { data: normalizeRpcRow(data), error };
+}
+
+export async function openRequestDispute(requestId, category, description) {
+  const { data, error } = await supabase.rpc("open_request_dispute", {
+    p_request_id: requestId,
+    p_category: category,
+    p_description: description.trim(),
+  });
+  return { data: normalizeRpcRow(data), error };
+}
+
+export async function withdrawRequestDispute(disputeId) {
+  const { data, error } = await supabase.rpc(
+    "withdraw_request_dispute",
+    {
+      p_dispute_id: disputeId,
+    },
+  );
+  return { data: normalizeRpcRow(data), error };
+}
+
+export async function requestPriceChange(requestId, proposedMaximum, reason) {
+  const { data, error } = await supabase.rpc("request_price_change", {
+    p_request_id: requestId,
+    p_proposed_maximum: Number(proposedMaximum),
+    p_reason: reason.trim(),
+  });
+  return { data: normalizeRpcRow(data), error };
+}
+
+export async function resolveRequestPriceChange(
+  priceChangeId,
+  approve,
+  responseNote,
+) {
+  const { data, error } = await supabase.rpc("resolve_request_price_change", {
+    p_price_change_id: priceChangeId,
+    p_approve: approve,
+    p_response_note: responseNote.trim() || null,
+  });
+  return { data: normalizeRpcRow(data), error };
+}
+
+export async function withdrawRequestPriceChange(priceChangeId) {
+  const { data, error } = await supabase.rpc(
+    "withdraw_request_price_change",
+    {
+      p_price_change_id: priceChangeId,
+    },
+  );
+  return { data: normalizeRpcRow(data), error };
+}
+
+function receiptExtension(mimeType) {
+  const extensions = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "application/pdf": "pdf",
+  };
+  return extensions[mimeType] || "file";
+}
+
+export async function uploadRequestReceipt(
+  requestId,
+  userId,
+  file,
+  purchaseAmount,
+  note,
+) {
+  const storagePath = `${requestId}/${userId}/${crypto.randomUUID()}.${receiptExtension(file.type)}`;
+  const uploadResult = await supabase.storage
+    .from("request-receipts")
+    .upload(storagePath, file, {
+      cacheControl: "3600",
+      contentType: file.type,
+      upsert: false,
+    });
+
+  if (uploadResult.error) return { data: null, error: uploadResult.error };
+
+  const { data, error } = await supabase.rpc("add_request_receipt", {
+    p_request_id: requestId,
+    p_storage_path: storagePath,
+    p_file_name: file.name,
+    p_mime_type: file.type,
+    p_file_size: file.size,
+    p_purchase_amount: Number(purchaseAmount),
+    p_note: note.trim() || null,
+  });
+
+  if (error) {
+    await supabase.storage.from("request-receipts").remove([storagePath]);
+  }
+
+  return { data: normalizeRpcRow(data), error };
+}
+
+export async function getRequestReceiptSignedUrl(storagePath) {
+  return supabase.storage
+    .from("request-receipts")
+    .createSignedUrl(storagePath, 60);
+}
+
+export async function deleteRequestReceipt(receipt) {
+  const storageResult = await supabase.storage
+    .from("request-receipts")
+    .remove([receipt.storage_path]);
+  if (storageResult.error) {
+    return { data: null, error: storageResult.error };
+  }
+
+  const { data, error } = await supabase.rpc("delete_request_receipt", {
+    p_receipt_id: receipt.id,
   });
   return { data: normalizeRpcRow(data), error };
 }
 
 export async function startRequest(requestId) {
-  const { data, error } = await supabase.rpc("start_request", {
-    p_request_id: requestId,
-  });
+  const { data, error } = await supabase.rpc(
+    "start_request_with_payment_terms",
+    {
+      p_request_id: requestId,
+    },
+  );
   return { data: normalizeRpcRow(data), error };
 }
 
 export async function submitRequestCompletion(requestId) {
-  const { data, error } = await supabase.rpc("submit_request_completion", {
-    p_request_id: requestId,
-  });
+  const { data, error } = await supabase.rpc(
+    "submit_request_completion_with_handoff",
+    {
+      p_request_id: requestId,
+    },
+  );
   return { data: normalizeRpcRow(data), error };
 }
 
-export async function confirmRequestCompletion(requestId) {
-  const { data, error } = await supabase.rpc("confirm_request_completion", {
-    p_request_id: requestId,
-  });
+export async function confirmRequestCompletion(
+  requestId,
+  receiptsReviewed = false,
+  paymentConfirmed = false,
+) {
+  const { data, error } = await supabase.rpc(
+    "confirm_request_completion_with_settlement",
+    {
+      p_request_id: requestId,
+      p_receipts_reviewed: receiptsReviewed,
+      p_payment_confirmed: paymentConfirmed,
+    },
+  );
   return { data: normalizeRpcRow(data), error };
 }
 
@@ -244,7 +529,9 @@ export async function getRequestParticipants(requestId) {
 export async function getRequestorSummary(userId) {
   const { data, error } = await supabase
     .from("requests")
-    .select("status, due_at, completed_at, expense_budget, service_fee")
+    .select(
+      "status, due_at, completed_at, expense_budget, service_fee, payment_terms:request_payment_terms(arrangement, maximum_advance)",
+    )
     .eq("requestor_id", userId);
   if (error) return { data: null, error };
 
@@ -276,7 +563,12 @@ export async function getRequestorSummary(userId) {
       counts.awaitingConfirmation += 1;
 
     if (plannedStatuses.includes(request.status)) {
-      counts.plannedExpenseBudget += Number(request.expense_budget) || 0;
+      const plannedExpense =
+        request.payment_terms?.arrangement ===
+        PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
+          ? request.payment_terms.maximum_advance
+          : request.expense_budget;
+      counts.plannedExpenseBudget += Number(plannedExpense) || 0;
       counts.plannedServiceFees += Number(request.service_fee) || 0;
 
       if (request.due_at) {
@@ -344,10 +636,11 @@ function prioritizeRequests(requests, priorities) {
 
 export async function getRequestorNextActions(userId) {
   const priorities = {
-    [REQUEST_STATUSES.AWAITING_CONFIRMATION]: 0,
-    [REQUEST_STATUSES.IN_PROGRESS]: 1,
-    [REQUEST_STATUSES.ACCEPTED]: 2,
-    [REQUEST_STATUSES.OPEN]: 3,
+    [REQUEST_STATUSES.FAILED]: 0,
+    [REQUEST_STATUSES.AWAITING_CONFIRMATION]: 1,
+    [REQUEST_STATUSES.IN_PROGRESS]: 2,
+    [REQUEST_STATUSES.ACCEPTED]: 3,
+    [REQUEST_STATUSES.OPEN]: 4,
   };
   const { data, error } = await supabase
     .from("requests")
@@ -362,7 +655,8 @@ export async function getRunnerNextActions(userId) {
   const priorities = {
     [REQUEST_STATUSES.IN_PROGRESS]: 0,
     [REQUEST_STATUSES.ACCEPTED]: 1,
-    [REQUEST_STATUSES.AWAITING_CONFIRMATION]: 2,
+    [REQUEST_STATUSES.FAILED]: 2,
+    [REQUEST_STATUSES.AWAITING_CONFIRMATION]: 3,
   };
   const { data, error } = await supabase
     .from("requests")

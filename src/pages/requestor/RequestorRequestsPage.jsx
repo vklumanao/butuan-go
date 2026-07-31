@@ -10,7 +10,10 @@ import {
 import { Link, useSearchParams } from "react-router-dom";
 import { getMyRequests } from "@/services/requestService";
 import { devLog } from "@/lib/errors";
-import { REQUEST_STATUSES } from "@/lib/requestConstants";
+import {
+  PAYMENT_ARRANGEMENTS,
+  REQUEST_STATUSES,
+} from "@/lib/requestConstants";
 import { formatCurrency, formatDateTime } from "@/lib/requestUtils";
 import { RequestStatusBadge } from "@/components/requests/RequestStatusBadge";
 import { Alert } from "@/components/ui/alert";
@@ -25,6 +28,7 @@ const requestFilters = [
   { value: "accepted", label: "Accepted" },
   { value: "in-progress", label: "In Progress" },
   { value: "awaiting-confirmation", label: "Needs Confirmation" },
+  { value: "failed", label: "Failed" },
   { value: "due-soon", label: "Due Soon" },
   { value: "completed-this-month", label: "Completed This Month" },
 ];
@@ -35,6 +39,7 @@ function matchesRequestFilter(request, filter) {
     accepted: REQUEST_STATUSES.ACCEPTED,
     "in-progress": REQUEST_STATUSES.IN_PROGRESS,
     "awaiting-confirmation": REQUEST_STATUSES.AWAITING_CONFIRMATION,
+    failed: REQUEST_STATUSES.FAILED,
   };
   if (filter === "all") return true;
   if (statusFilters[filter]) return request.status === statusFilters[filter];
@@ -259,10 +264,18 @@ export function RequestorRequestsPage() {
                       {formatDateTime(request.due_at)}
                     </p>
                     <p className="font-semibold text-slate-800">
-                      Total:{" "}
+                      {request.payment_terms?.arrangement ===
+                      PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
+                        ? "Maximum to Runner: "
+                        : "Runner fee: "}
                       {formatCurrency(
-                        Number(request.expense_budget) +
-                          Number(request.service_fee),
+                        Number(request.service_fee) +
+                          (request.payment_terms?.arrangement ===
+                          PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
+                            ? Number(
+                                request.payment_terms.maximum_advance,
+                              )
+                            : 0),
                       )}
                     </p>
                   </div>

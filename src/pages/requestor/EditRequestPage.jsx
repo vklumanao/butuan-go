@@ -7,11 +7,17 @@ import { toast } from "sonner";
 import { requestSchema } from "@/validation/requestSchema";
 import {
   getCategories,
+  getRequestPaymentDetails,
   getRequestorRequestById,
   getRequestLocation,
   updateOpenRequest,
 } from "@/services/requestService";
-import { FULFILLMENT_TYPES, REQUEST_STATUSES } from "@/lib/requestConstants";
+import {
+  FULFILLMENT_TYPES,
+  PAYMENT_ARRANGEMENTS,
+  PAYMENT_PAYER_TYPES,
+  REQUEST_STATUSES,
+} from "@/lib/requestConstants";
 import { devLog } from "@/lib/errors";
 import { formatCurrency, getFriendlyRequestError } from "@/lib/requestUtils";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,6 +26,7 @@ import {
   RequestLocationFields,
 } from "@/components/requests/RequestLocationFields";
 import { InPersonPaymentNotice } from "@/components/requests/InPersonPaymentNotice";
+import { RequestPaymentFields } from "@/components/requests/RequestPaymentTerms";
 import { FormField } from "@/components/common/FormField";
 import { FullPageLoader } from "@/components/common/FullPageLoader";
 import { Alert } from "@/components/ui/alert";
@@ -73,6 +80,11 @@ export function EditRequestPage() {
       area: "",
       expenseBudget: 0,
       serviceFee: 0,
+      paymentArrangement: PAYMENT_ARRANGEMENTS.NO_PURCHASE,
+      payerType: PAYMENT_PAYER_TYPES.REQUESTOR,
+      payerName: "",
+      payerPhone: "",
+      merchantReference: "",
       dueAt: "",
       fulfillmentType: FULFILLMENT_TYPES.DELIVERY,
       pickupAddress: "",
@@ -90,7 +102,16 @@ export function EditRequestPage() {
   const expenseBudget =
     Number(useWatch({ control, name: "expenseBudget" })) || 0;
   const serviceFee = Number(useWatch({ control, name: "serviceFee" })) || 0;
+  const paymentArrangement = useWatch({
+    control,
+    name: "paymentArrangement",
+  });
+  const payerType = useWatch({ control, name: "payerType" });
   const fulfillmentType = useWatch({ control, name: "fulfillmentType" });
+  const amountDueToRunner =
+    paymentArrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
+      ? expenseBudget + serviceFee
+      : serviceFee;
   const minimumDueAt = useMemo(() => minimumLocalDateTime(), []);
 
   useEffect(() => {
@@ -99,43 +120,62 @@ export function EditRequestPage() {
       getCategories(),
       getRequestorRequestById(requestId, user.id),
       getRequestLocation(requestId),
-    ]).then(([categoryResult, requestResult, locationResult]) => {
-      if (!active) return;
-      if (categoryResult.error || requestResult.error || locationResult.error) {
-        devLog(
-          "Edit request retrieval failed",
-          categoryResult.error || requestResult.error || locationResult.error,
-        );
-        setLoadError("We could not load this request for editing.");
-      } else {
-        const request = requestResult.data;
-        const location = locationResult.data;
-        setCategories(categoryResult.data || []);
-        setRequestStatus(request.status);
-        reset({
-          categoryId: String(request.category_id),
-          title: request.title,
-          description: request.description,
-          area: request.area,
-          expenseBudget: Number(request.expense_budget),
-          serviceFee: Number(request.service_fee),
-          dueAt: toLocalDateTime(request.due_at),
-          fulfillmentType:
-            location?.fulfillment_type || FULFILLMENT_TYPES.DELIVERY,
-          pickupAddress: location?.pickup_address || "",
-          pickupLandmark: location?.pickup_landmark || "",
-          pickupInstructions: location?.pickup_instructions || "",
-          deliveryAddress: location?.delivery_address || "",
-          deliveryLandmark: location?.delivery_landmark || "",
-          deliveryInstructions: location?.delivery_instructions || "",
-          contactName: location?.contact_name || profile.full_name || "",
-          contactPhone: location?.contact_phone || profile.phone_number || "",
-          approximateLatitude: request.approximate_latitude,
-          approximateLongitude: request.approximate_longitude,
-        });
-      }
-      setLoading(false);
-    });
+      getRequestPaymentDetails(requestId),
+    ]).then(
+      ([categoryResult, requestResult, locationResult, paymentDetailsResult]) => {
+        if (!active) return;
+        if (
+          categoryResult.error ||
+          requestResult.error ||
+          locationResult.error ||
+          paymentDetailsResult.error
+        ) {
+          devLog(
+            "Edit request retrieval failed",
+            categoryResult.error ||
+              requestResult.error ||
+              locationResult.error ||
+              paymentDetailsResult.error,
+          );
+          setLoadError("We could not load this request for editing.");
+        } else {
+          const request = requestResult.data;
+          const location = locationResult.data;
+          const terms = request.payment_terms;
+          const paymentDetails = paymentDetailsResult.data;
+          setCategories(categoryResult.data || []);
+          setRequestStatus(request.status);
+          reset({
+            categoryId: String(request.category_id),
+            title: request.title,
+            description: request.description,
+            area: request.area,
+            expenseBudget: Number(request.expense_budget),
+            serviceFee: Number(request.service_fee),
+            paymentArrangement:
+              terms?.arrangement || PAYMENT_ARRANGEMENTS.NO_PURCHASE,
+            payerType: terms?.payer_type || PAYMENT_PAYER_TYPES.REQUESTOR,
+            payerName: paymentDetails?.payer_name || "",
+            payerPhone: paymentDetails?.payer_phone || "",
+            merchantReference: paymentDetails?.merchant_reference || "",
+            dueAt: toLocalDateTime(request.due_at),
+            fulfillmentType:
+              location?.fulfillment_type || FULFILLMENT_TYPES.DELIVERY,
+            pickupAddress: location?.pickup_address || "",
+            pickupLandmark: location?.pickup_landmark || "",
+            pickupInstructions: location?.pickup_instructions || "",
+            deliveryAddress: location?.delivery_address || "",
+            deliveryLandmark: location?.delivery_landmark || "",
+            deliveryInstructions: location?.delivery_instructions || "",
+            contactName: location?.contact_name || profile.full_name || "",
+            contactPhone: location?.contact_phone || profile.phone_number || "",
+            approximateLatitude: request.approximate_latitude,
+            approximateLongitude: request.approximate_longitude,
+          });
+        }
+        setLoading(false);
+      },
+    );
     return () => {
       active = false;
     };
@@ -298,12 +338,20 @@ export function EditRequestPage() {
                 />
               </FormField>
             </div>
+            <RequestPaymentFields
+              register={register}
+              errors={errors}
+              paymentArrangement={paymentArrangement}
+              payerType={payerType}
+              expenseBudget={expenseBudget}
+              idPrefix="editPayment"
+            />
             <div className="rounded-xl bg-slate-50 p-4">
               <p className="text-sm text-slate-600">
-                Estimated amount to settle in person
+                Expected amount paid to the Runner at handoff
               </p>
               <p className="mt-1 text-2xl font-black">
-                {formatCurrency(expenseBudget + serviceFee)}
+                {formatCurrency(amountDueToRunner)}
               </p>
             </div>
             <InPersonPaymentNotice />

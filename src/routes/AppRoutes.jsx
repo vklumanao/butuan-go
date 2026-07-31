@@ -1,14 +1,12 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { USER_ROLES } from "@/lib/constants";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicOnlyRoute } from "./PublicOnlyRoute";
 import { RoleRoute } from "./RoleRoute";
 import { LandingPage } from "@/pages/public/LandingPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
-import { RegisterPage } from "@/pages/auth/RegisterPage";
-import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
-import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { AuthCallbackPage } from "@/pages/auth/AuthCallbackPage";
+import { OnboardingPage } from "@/pages/auth/OnboardingPage";
 import { UnauthorizedPage } from "@/pages/public/UnauthorizedPage";
 import { NotFoundPage } from "@/pages/public/NotFoundPage";
 import { TermsPage } from "@/pages/public/TermsPage";
@@ -27,6 +25,11 @@ import {
 } from "@/pages/runner/RunnerRequestsPages";
 import { RunnerRequestDetailsPage } from "@/pages/runner/RunnerRequestDetailsPage";
 import { ProfilePage } from "@/pages/profile/ProfilePage";
+import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
+import { AdminRequestsPage } from "@/pages/admin/AdminRequestsPage";
+import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
+import { AdminDisputesPage } from "@/pages/admin/AdminDisputesPage";
+import { AdminAuditPage } from "@/pages/admin/AdminAuditPage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export function AppRoutes() {
@@ -35,16 +38,23 @@ export function AppRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route element={<PublicOnlyRoute />}>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       </Route>
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/register" element={<Navigate to="/login" replace />} />
+      <Route
+        path="/forgot-password"
+        element={<Navigate to="/login" replace />}
+      />
+      <Route
+        path="/reset-password"
+        element={<Navigate to="/login" replace />}
+      />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/safety" element={<SafetyPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route element={<ProtectedRoute />}>
+        <Route path="/onboarding" element={<OnboardingPage />} />
         <Route element={<RoleRoute allowedRole={USER_ROLES.REQUESTOR} />}>
           <Route element={<AppShell />}>
             <Route
@@ -91,6 +101,16 @@ export function AppRoutes() {
               path="/runner/tasks/:requestId"
               element={<RunnerRequestDetailsPage />}
             />
+          </Route>
+        </Route>
+        <Route element={<RoleRoute allowedRole={USER_ROLES.ADMIN} />}>
+          <Route element={<AppShell />}>
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            <Route path="/admin/requests" element={<AdminRequestsPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/disputes" element={<AdminDisputesPage />} />
+            <Route path="/admin/audit" element={<AdminAuditPage />} />
+            <Route path="/admin/profile" element={<ProfilePage />} />
           </Route>
         </Route>
       </Route>

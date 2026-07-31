@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
+  Activity,
   BriefcaseBusiness,
   ChevronRight,
   ClipboardList,
@@ -10,13 +11,16 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Search,
+  Scale,
   UserRound,
+  UsersRound,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getActiveRole, ROLE_LABELS, USER_ROLES } from "@/lib/constants";
+import { getProfileAvatarUrl, getProfileInitials } from "@/lib/profileUtils";
 import { Brand } from "./Brand";
 import { RoleSwitcher } from "./RoleSwitcher";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,18 +53,13 @@ function getInitialSidebarState() {
   }
 }
 
-function initials(name) {
-  return (
-    name
-      ?.split(" ")
-      .map((part) => part[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || "U"
-  );
-}
-
 function getPageTitle(pathname) {
+  if (pathname === "/admin/dashboard") return "Operations Overview";
+  if (pathname === "/admin/requests") return "Request Oversight";
+  if (pathname === "/admin/users") return "Account Directory";
+  if (pathname === "/admin/disputes") return "Dispute Review";
+  if (pathname === "/admin/audit") return "Admin Audit Log";
+  if (pathname === "/admin/profile") return "Admin Profile";
   if (pathname.endsWith("/dashboard")) return "Dashboard";
   if (pathname.endsWith("/profile")) return "Profile";
   if (pathname === "/requestor/requests/new") return "Create Request";
@@ -84,7 +83,7 @@ function getPageTitle(pathname) {
 }
 
 export function AppShell() {
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -95,11 +94,27 @@ export function AppShell() {
   );
   const activeRole = getActiveRole(profile);
   const activeRoleLabel = ROLE_LABELS[activeRole] || "Account";
+  const avatarUrl = getProfileAvatarUrl(profile, user);
   const pageTitle = getPageTitle(location.pathname);
-  const base = activeRole === USER_ROLES.RUNNER ? "/runner" : "/requestor";
-  const links = [
-    { to: `${base}/dashboard`, label: "Dashboard", icon: LayoutDashboard },
-    ...(activeRole === USER_ROLES.REQUESTOR
+  const base =
+    activeRole === USER_ROLES.ADMIN
+      ? "/admin"
+      : activeRole === USER_ROLES.RUNNER
+        ? "/runner"
+        : "/requestor";
+  const links =
+    activeRole === USER_ROLES.ADMIN
+      ? [
+          { to: "/admin/dashboard", label: "Overview", icon: LayoutDashboard },
+          { to: "/admin/requests", label: "Requests", icon: ClipboardList },
+          { to: "/admin/disputes", label: "Disputes", icon: Scale },
+          { to: "/admin/users", label: "Accounts", icon: UsersRound },
+          { to: "/admin/audit", label: "Audit Log", icon: Activity },
+          { to: "/admin/profile", label: "Profile", icon: UserRound },
+        ]
+      : [
+          { to: `${base}/dashboard`, label: "Dashboard", icon: LayoutDashboard },
+          ...(activeRole === USER_ROLES.REQUESTOR
       ? [
           {
             to: "/requestor/requests",
@@ -108,14 +123,14 @@ export function AppShell() {
           },
         ]
       : []),
-    ...(activeRole === USER_ROLES.RUNNER
+          ...(activeRole === USER_ROLES.RUNNER
       ? [
           { to: "/runner/requests", label: "Available Requests", icon: Search },
           { to: "/runner/tasks", label: "My Tasks", icon: BriefcaseBusiness },
         ]
       : []),
-    { to: `${base}/profile`, label: "Profile", icon: UserRound },
-  ];
+          { to: `${base}/profile`, label: "Profile", icon: UserRound },
+        ];
   async function handleLogout() {
     setLoggingOut(true);
     const { error } = await signOut();
@@ -171,7 +186,16 @@ export function AppShell() {
           <div className="absolute inset-x-5 bottom-5">
             <div className="mb-3 flex items-center gap-3">
               <Avatar>
-                <AvatarFallback>{initials(profile.full_name)}</AvatarFallback>
+                {avatarUrl && (
+                  <AvatarImage
+                    src={avatarUrl}
+                    alt={`${profile.full_name} profile photo`}
+                    referrerPolicy="no-referrer"
+                  />
+                )}
+                <AvatarFallback>
+                  {getProfileInitials(profile.full_name)}
+                </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">
@@ -180,7 +204,9 @@ export function AppShell() {
                 <Badge>{activeRoleLabel} mode</Badge>
               </div>
             </div>
-            <RoleSwitcher className="mb-2 w-full" />
+            {activeRole !== USER_ROLES.ADMIN && (
+              <RoleSwitcher className="mb-2 w-full" />
+            )}
             <Button
               variant="outline"
               className="w-full"
@@ -253,8 +279,15 @@ export function AppShell() {
               <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center gap-3">
                   <Avatar>
+                    {avatarUrl && (
+                      <AvatarImage
+                        src={avatarUrl}
+                        alt={`${profile.full_name} profile photo`}
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
                     <AvatarFallback>
-                      {initials(profile.full_name)}
+                      {getProfileInitials(profile.full_name)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
@@ -270,10 +303,12 @@ export function AppShell() {
               </div>
               {renderNavigation({ mobile: true })}
               <div className="mt-auto border-t border-slate-200 pt-4">
-                <RoleSwitcher
-                  className="w-full"
-                  onSwitched={() => setMobileOpen(false)}
-                />
+                {activeRole !== USER_ROLES.ADMIN && (
+                  <RoleSwitcher
+                    className="w-full"
+                    onSwitched={() => setMobileOpen(false)}
+                  />
+                )}
                 <SheetClose asChild>
                   <Button
                     variant="outline"

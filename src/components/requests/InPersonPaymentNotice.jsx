@@ -17,9 +17,10 @@ export function InPersonPaymentNotice({ className, compact = false }) {
         <div>
           <p className="font-semibold">Direct in-person payment</p>
           <p className="mt-1 text-sm leading-6 text-accent-900/80">
-            The Requestor pays the Runner directly during meetup or delivery,
-            after reviewing the completed errand and applicable receipts.
-            ButuanGo does not collect, hold, or process the payment.
+            The selected payer pays the Runner directly during meetup or
+            delivery, after reviewing the completed errand and applicable
+            receipts. ButuanGo records each participant's confirmation but does
+            not collect, hold, process, or guarantee the payment.
           </p>
         </div>
       </div>

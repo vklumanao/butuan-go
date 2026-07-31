@@ -20,6 +20,10 @@ import { createRequest, getCategories } from "@/services/requestService";
 import {
   FULFILLMENT_TYPES,
   FULFILLMENT_TYPE_LABELS,
+  PAYMENT_ARRANGEMENTS,
+  PAYMENT_ARRANGEMENT_LABELS,
+  PAYMENT_PAYER_LABELS,
+  PAYMENT_PAYER_TYPES,
 } from "@/lib/requestConstants";
 import { devLog } from "@/lib/errors";
 import { formatCurrency, getFriendlyRequestError } from "@/lib/requestUtils";
@@ -29,6 +33,7 @@ import {
   RequestLocationFields,
 } from "@/components/requests/RequestLocationFields";
 import { InPersonPaymentNotice } from "@/components/requests/InPersonPaymentNotice";
+import { RequestPaymentFields } from "@/components/requests/RequestPaymentTerms";
 import { FormField } from "@/components/common/FormField";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -64,7 +69,16 @@ const STEP_FIELDS = {
     "approximateLatitude",
     "approximateLongitude",
   ],
-  3: ["expenseBudget", "serviceFee", "dueAt"],
+  3: [
+    "expenseBudget",
+    "serviceFee",
+    "paymentArrangement",
+    "payerType",
+    "payerName",
+    "payerPhone",
+    "merchantReference",
+    "dueAt",
+  ],
 };
 
 function minimumLocalDateTime() {
@@ -141,6 +155,11 @@ export function CreateRequestPage() {
       area: "",
       expenseBudget: 0,
       serviceFee: 0,
+      paymentArrangement: "",
+      payerType: PAYMENT_PAYER_TYPES.REQUESTOR,
+      payerName: "",
+      payerPhone: "",
+      merchantReference: "",
       dueAt: "",
       fulfillmentType: FULFILLMENT_TYPES.DELIVERY,
       pickupAddress: "",
@@ -169,8 +188,17 @@ export function CreateRequestPage() {
   const expenseBudget =
     Number(useWatch({ control, name: "expenseBudget" })) || 0;
   const serviceFee = Number(useWatch({ control, name: "serviceFee" })) || 0;
+  const paymentArrangement = useWatch({
+    control,
+    name: "paymentArrangement",
+  });
+  const payerType = useWatch({ control, name: "payerType" });
   const fulfillmentType = useWatch({ control, name: "fulfillmentType" });
   const estimatedTotal = expenseBudget + serviceFee;
+  const amountDueToRunner =
+    paymentArrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
+      ? estimatedTotal
+      : serviceFee;
   const selectedCategory = categories.find(
     (category) => String(category.id) === categoryId,
   );
@@ -515,16 +543,25 @@ export function CreateRequestPage() {
                     />
                   </FormField>
                 </div>
+                <RequestPaymentFields
+                  register={register}
+                  errors={errors}
+                  paymentArrangement={paymentArrangement}
+                  payerType={payerType}
+                  expenseBudget={expenseBudget}
+                  idPrefix="createPayment"
+                />
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-sm text-slate-600">
-                    Estimated amount to settle in person
+                    Expected amount paid to the Runner at handoff
                   </p>
                   <p className="mt-1 text-2xl font-black text-slate-950">
-                    {formatCurrency(estimatedTotal)}
+                    {formatCurrency(amountDueToRunner)}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    Expense estimate plus Runner fee. Agree on any change before
-                    purchase.
+                    {paymentArrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
+                      ? "Maximum advance plus Runner fee. The actual reimbursement will follow the receipt."
+                      : "The purchase expense is not collected by the Runner under this arrangement."}
                   </p>
                 </div>
                 <InPersonPaymentNotice />
@@ -594,13 +631,15 @@ export function CreateRequestPage() {
                   </div>
                   <div className="rounded-xl bg-slate-50 p-4">
                     <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                      In-person estimate
+                      Payment
                     </dt>
-                    <dd className="mt-1 font-bold text-brand-800">
-                      {formatCurrency(estimatedTotal)}
+                    <dd className="mt-1 font-bold text-slate-900">
+                      {PAYMENT_ARRANGEMENT_LABELS[paymentArrangement] ||
+                        "Not selected"}
                     </dd>
                     <dd className="mt-1 text-sm text-slate-600">
-                      Runner fee: {formatCurrency(serviceFee)}
+                      {PAYMENT_PAYER_LABELS[payerType]} · Runner receives up to{" "}
+                      {formatCurrency(amountDueToRunner)}
                     </dd>
                   </div>
                 </dl>

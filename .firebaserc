@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "butuango-vklum-2026"
+  },
+  "targets": {
+    "butuango-vklum-2026": {
+      "hosting": {
+        "app": [
+          "butuan-go"
+        ]
+      }
+    }
+  }
+}

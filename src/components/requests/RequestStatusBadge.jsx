@@ -9,6 +9,7 @@ const statusStyles = {
   [REQUEST_STATUSES.AWAITING_CONFIRMATION]: "bg-violet-100 text-violet-800",
   [REQUEST_STATUSES.COMPLETED]: "bg-emerald-100 text-emerald-800",
   [REQUEST_STATUSES.CANCELLED]: "bg-slate-200 text-slate-700",
+  [REQUEST_STATUSES.FAILED]: "bg-red-100 text-red-800",
 };
 
 export function RequestStatusBadge({ status, className }) {

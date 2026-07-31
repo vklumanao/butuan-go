@@ -15,6 +15,8 @@ const actionDescriptions = {
     "Review the private details and start when you are ready.",
   [REQUEST_STATUSES.AWAITING_CONFIRMATION]:
     "Completion was submitted and is waiting for the Requestor’s confirmation.",
+  [REQUEST_STATUSES.FAILED]:
+    "The handoff was reported as failed. Review its record or dispute history.",
 };
 
 function toNextAction(request) {
@@ -22,6 +24,7 @@ function toNextAction(request) {
     [REQUEST_STATUSES.IN_PROGRESS]: "Continue task",
     [REQUEST_STATUSES.ACCEPTED]: "Open task",
     [REQUEST_STATUSES.AWAITING_CONFIRMATION]: "View task",
+    [REQUEST_STATUSES.FAILED]: "Review failed task",
   };
   return {
     id: request.id,

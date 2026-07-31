@@ -2,12 +2,10 @@ import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   CalendarClock,
-  CircleDollarSign,
   ClipboardCheck,
   LoaderCircle,
   MapPin,
   RefreshCw,
-  WalletCards,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -17,10 +15,18 @@ import {
   getRunnerCapacity,
   getRunnerRequestById,
   getRequestLocation,
+  getRequestPaymentDetails,
+  getRequestPriceChanges,
+  getRequestReceipts,
+  getRequestHandoffState,
+  getRequestSettlement,
+  getRequestFailure,
+  getRequestDisputes,
   getRequestParticipants,
   getRequestUpdates,
 } from "@/services/requestService";
 import {
+  PAYMENT_ARRANGEMENTS,
   REQUEST_STATUSES,
   REQUEST_STATUS_LABELS,
 } from "@/lib/requestConstants";
@@ -35,6 +41,9 @@ import { RunnerTaskActions } from "@/components/requests/RunnerTaskActions";
 import { RequestLocationDetails } from "@/components/requests/RequestLocationDetails";
 import { RequestParticipantCard } from "@/components/requests/RequestParticipantCard";
 import { InPersonPaymentNotice } from "@/components/requests/InPersonPaymentNotice";
+import { PaymentTermsSummary } from "@/components/requests/RequestPaymentTerms";
+import { PaymentEvidencePanel } from "@/components/requests/PaymentEvidencePanel";
+import { HandoffSettlementPanel } from "@/components/requests/HandoffSettlementPanel";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,21 +92,51 @@ async function getRunnerRequestDetails(requestId, userId) {
       requestResult,
       updatesResult: null,
       locationResult: null,
+      paymentDetailsResult: null,
+      priceChangesResult: null,
+      receiptsResult: null,
+      handoffResult: null,
+      settlementResult: null,
+      failureResult: null,
+      disputesResult: null,
       participantsResult: null,
       capacityResult,
     };
   }
-  const [updatesResult, locationResult, participantsResult] = await Promise.all(
-    [
-      getRequestUpdates(requestId),
-      getRequestLocation(requestId),
-      getRequestParticipants(requestId),
-    ],
-  );
+  const [
+    updatesResult,
+    locationResult,
+    paymentDetailsResult,
+    priceChangesResult,
+    receiptsResult,
+    handoffResult,
+    settlementResult,
+    failureResult,
+    disputesResult,
+    participantsResult,
+  ] = await Promise.all([
+    getRequestUpdates(requestId),
+    getRequestLocation(requestId),
+    getRequestPaymentDetails(requestId),
+    getRequestPriceChanges(requestId),
+    getRequestReceipts(requestId),
+    getRequestHandoffState(requestId),
+    getRequestSettlement(requestId),
+    getRequestFailure(requestId),
+    getRequestDisputes(requestId),
+    getRequestParticipants(requestId),
+  ]);
   return {
     requestResult,
     updatesResult,
     locationResult,
+    paymentDetailsResult,
+    priceChangesResult,
+    receiptsResult,
+    handoffResult,
+    settlementResult,
+    failureResult,
+    disputesResult,
     participantsResult,
     capacityResult,
   };
@@ -110,6 +149,13 @@ export function RunnerRequestDetailsPage() {
   const [request, setRequest] = useState(null);
   const [updates, setUpdates] = useState([]);
   const [location, setLocation] = useState(null);
+  const [paymentDetails, setPaymentDetails] = useState(null);
+  const [priceChanges, setPriceChanges] = useState([]);
+  const [receipts, setReceipts] = useState([]);
+  const [handoff, setHandoff] = useState(null);
+  const [settlement, setSettlement] = useState(null);
+  const [failure, setFailure] = useState(null);
+  const [disputes, setDisputes] = useState([]);
   const [participants, setParticipants] = useState([]);
   const [activeTask, setActiveTask] = useState(null);
   const [capacityError, setCapacityError] = useState(false);
@@ -117,6 +163,7 @@ export function RunnerRequestDetailsPage() {
   const [error, setError] = useState("");
   const [acceptOpen, setAcceptOpen] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [cashAdvanceConsent, setCashAdvanceConsent] = useState(false);
   const [actionError, setActionError] = useState("");
 
   async function loadRequest() {
@@ -126,6 +173,13 @@ export function RunnerRequestDetailsPage() {
       requestResult,
       updatesResult,
       locationResult,
+      paymentDetailsResult,
+      priceChangesResult,
+      receiptsResult,
+      handoffResult,
+      settlementResult,
+      failureResult,
+      disputesResult,
       participantsResult,
       capacityResult,
     } = await getRunnerRequestDetails(requestId, user.id);
@@ -152,6 +206,47 @@ export function RunnerRequestDetailsPage() {
       } else {
         setLocation(locationResult?.data || null);
       }
+      if (paymentDetailsResult?.error) {
+        devLog(
+          "Runner private payment detail retrieval failed",
+          paymentDetailsResult.error,
+        );
+      } else {
+        setPaymentDetails(paymentDetailsResult?.data || null);
+      }
+      if (priceChangesResult?.error) {
+        devLog(
+          "Runner price-change retrieval failed",
+          priceChangesResult.error,
+        );
+      } else {
+        setPriceChanges(priceChangesResult?.data || []);
+      }
+      if (receiptsResult?.error) {
+        devLog("Runner receipt retrieval failed", receiptsResult.error);
+      } else {
+        setReceipts(receiptsResult?.data || []);
+      }
+      if (handoffResult?.error) {
+        devLog("Runner handoff retrieval failed", handoffResult.error);
+      } else {
+        setHandoff(handoffResult?.data || null);
+      }
+      if (settlementResult?.error) {
+        devLog("Runner settlement retrieval failed", settlementResult.error);
+      } else {
+        setSettlement(settlementResult?.data || null);
+      }
+      if (failureResult?.error) {
+        devLog("Runner failure retrieval failed", failureResult.error);
+      } else {
+        setFailure(failureResult?.data || null);
+      }
+      if (disputesResult?.error) {
+        devLog("Runner dispute retrieval failed", disputesResult.error);
+      } else {
+        setDisputes(disputesResult?.data || []);
+      }
       if (participantsResult?.error) {
         devLog("Runner participant retrieval failed", participantsResult.error);
       } else {
@@ -175,6 +270,13 @@ export function RunnerRequestDetailsPage() {
         requestResult,
         updatesResult,
         locationResult,
+        paymentDetailsResult,
+        priceChangesResult,
+        receiptsResult,
+        handoffResult,
+        settlementResult,
+        failureResult,
+        disputesResult,
         participantsResult,
         capacityResult,
       }) => {
@@ -204,6 +306,50 @@ export function RunnerRequestDetailsPage() {
           } else {
             setLocation(locationResult?.data || null);
           }
+          if (paymentDetailsResult?.error) {
+            devLog(
+              "Runner private payment detail retrieval failed",
+              paymentDetailsResult.error,
+            );
+          } else {
+            setPaymentDetails(paymentDetailsResult?.data || null);
+          }
+          if (priceChangesResult?.error) {
+            devLog(
+              "Runner price-change retrieval failed",
+              priceChangesResult.error,
+            );
+          } else {
+            setPriceChanges(priceChangesResult?.data || []);
+          }
+          if (receiptsResult?.error) {
+            devLog("Runner receipt retrieval failed", receiptsResult.error);
+          } else {
+            setReceipts(receiptsResult?.data || []);
+          }
+          if (handoffResult?.error) {
+            devLog("Runner handoff retrieval failed", handoffResult.error);
+          } else {
+            setHandoff(handoffResult?.data || null);
+          }
+          if (settlementResult?.error) {
+            devLog(
+              "Runner settlement retrieval failed",
+              settlementResult.error,
+            );
+          } else {
+            setSettlement(settlementResult?.data || null);
+          }
+          if (failureResult?.error) {
+            devLog("Runner failure retrieval failed", failureResult.error);
+          } else {
+            setFailure(failureResult?.data || null);
+          }
+          if (disputesResult?.error) {
+            devLog("Runner dispute retrieval failed", disputesResult.error);
+          } else {
+            setDisputes(disputesResult?.data || []);
+          }
           if (participantsResult?.error) {
             devLog(
               "Runner participant retrieval failed",
@@ -231,7 +377,10 @@ export function RunnerRequestDetailsPage() {
   async function handleAccept() {
     setAccepting(true);
     setActionError("");
-    const { data, error: acceptError } = await acceptRequest(requestId);
+    const { data, error: acceptError } = await acceptRequest(
+      requestId,
+      cashAdvanceConsent,
+    );
     setAccepting(false);
     if (acceptError) {
       devLog("Request acceptance failed", acceptError);
@@ -273,7 +422,15 @@ export function RunnerRequestDetailsPage() {
   }
 
   const isOpen = request.status === REQUEST_STATUSES.OPEN;
+  const requiresCashAdvance =
+    request.payment_terms?.arrangement ===
+    PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE;
+  const paymentTermsMissing = !request.payment_terms;
   const isAtCapacity = isOpen && Boolean(activeTask);
+  const usesPurchaseEvidence = [
+    PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID,
+    PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE,
+  ].includes(request.payment_terms?.arrangement);
   const backTo = isOpen ? "/runner/requests" : "/runner/tasks";
   const requestorParticipant = participants.find(
     (participant) => participant.participant_type === "requestor",
@@ -306,11 +463,13 @@ export function RunnerRequestDetailsPage() {
         {isOpen && (
           <Button
             size="lg"
-            disabled={isAtCapacity}
+            disabled={isAtCapacity || paymentTermsMissing}
             title={
               isAtCapacity
                 ? "Finish or submit your current task before accepting another request."
-                : undefined
+                : paymentTermsMissing
+                  ? "The Requestor must add a payment arrangement first."
+                  : undefined
             }
             onClick={() => setAcceptOpen(true)}
           >
@@ -329,6 +488,13 @@ export function RunnerRequestDetailsPage() {
           <Button variant="outline" size="sm" className="mt-3" asChild>
             <Link to={`/runner/tasks/${activeTask.id}`}>Open active task</Link>
           </Button>
+        </Alert>
+      )}
+
+      {isOpen && paymentTermsMissing && (
+        <Alert className="mt-6 border-amber-200 bg-amber-50 text-amber-900">
+          This request cannot be accepted until the Requestor adds a payment
+          arrangement.
         </Alert>
       )}
 
@@ -377,6 +543,50 @@ export function RunnerRequestDetailsPage() {
             locked={isOpen}
             onRefresh={!isOpen && !location ? loadRequest : null}
           />
+
+          {!isOpen && (usesPurchaseEvidence || priceChanges.length > 0) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Price approval and receipts</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PaymentEvidencePanel
+                  request={request}
+                  priceChanges={priceChanges}
+                  receipts={receipts}
+                  role="runner"
+                  userId={user.id}
+                  onChanged={loadRequest}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {!isOpen &&
+            (handoff ||
+              settlement ||
+              failure ||
+              disputes.length > 0) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Handoff, payment, and resolution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <HandoffSettlementPanel
+                    request={request}
+                    handoff={handoff}
+                    settlement={settlement}
+                    failure={failure}
+                    disputes={disputes}
+                    receipts={receipts}
+                    priceChanges={priceChanges}
+                    role="runner"
+                    userId={user.id}
+                    onChanged={loadRequest}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
           {!isOpen && (
             <Card>
@@ -429,32 +639,16 @@ export function RunnerRequestDetailsPage() {
           )}
           <Card>
             <CardHeader>
-              <CardTitle>In-person payment arrangement</CardTitle>
+              <CardTitle>Payment arrangement</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-between gap-4">
-                <span className="flex items-center gap-2 text-sm text-slate-600">
-                  <WalletCards className="h-4 w-4" />
-                  Estimated errand expense
-                </span>
-                <strong>{formatCurrency(request.expense_budget)}</strong>
-              </div>
-              <div className="flex justify-between gap-4">
-                <span className="flex items-center gap-2 text-sm text-slate-600">
-                  <CircleDollarSign className="h-4 w-4" />
-                  Agreed Runner fee
-                </span>
-                <strong>{formatCurrency(request.service_fee)}</strong>
-              </div>
-              <div className="flex justify-between gap-4 border-t border-slate-200 pt-4">
-                <span className="font-semibold">Estimated in-person total</span>
-                <strong className="text-brand-700">
-                  {formatCurrency(
-                    Number(request.expense_budget) +
-                      Number(request.service_fee),
-                  )}
-                </strong>
-              </div>
+              <PaymentTermsSummary
+                terms={request.payment_terms}
+                details={paymentDetails}
+                expenseBudget={request.expense_budget}
+                serviceFee={request.service_fee}
+                compact
+              />
               <InPersonPaymentNotice compact />
             </CardContent>
           </Card>
@@ -468,6 +662,11 @@ export function RunnerRequestDetailsPage() {
                   request={request}
                   onChanged={loadRequest}
                   hasLocation={Boolean(location)}
+                  priceChanges={priceChanges}
+                  receipts={receipts}
+                  handoff={handoff}
+                  settlement={settlement}
+                  disputes={disputes}
                 />
               </CardContent>
             </Card>
@@ -475,7 +674,16 @@ export function RunnerRequestDetailsPage() {
         </aside>
       </div>
 
-      <Dialog open={acceptOpen} onOpenChange={setAcceptOpen}>
+      <Dialog
+        open={acceptOpen}
+        onOpenChange={(open) => {
+          setAcceptOpen(open);
+          if (!open) {
+            setActionError("");
+            setCashAdvanceConsent(false);
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader className="mb-5 pr-8">
             <DialogTitle>Accept this request?</DialogTitle>
@@ -485,12 +693,33 @@ export function RunnerRequestDetailsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
+            <PaymentTermsSummary
+              terms={request.payment_terms}
+              expenseBudget={request.expense_budget}
+              serviceFee={request.service_fee}
+              compact
+            />
             <InPersonPaymentNotice compact />
-            <Alert className="border-amber-200 bg-amber-50 text-amber-900">
-              Some errands may require you to temporarily cover the purchase
-              cost. Accept only if you understand the estimated expense and are
-              comfortable with that arrangement. Keep the official receipt.
-            </Alert>
+            {requiresCashAdvance && (
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+                <input
+                  type="checkbox"
+                  checked={cashAdvanceConsent}
+                  onChange={(event) =>
+                    setCashAdvanceConsent(event.target.checked)
+                  }
+                  className="mt-1 h-4 w-4 rounded border-amber-400 text-brand-600 focus:ring-brand-600"
+                />
+                <span>
+                  I voluntarily agree to use up to{" "}
+                  <strong>
+                    {formatCurrency(request.payment_terms.maximum_advance)}
+                  </strong>{" "}
+                  of my own money for this task. I understand that ButuanGo
+                  records this consent but does not hold or guarantee payment.
+                </span>
+              </label>
+            )}
             {actionError && <Alert variant="destructive">{actionError}</Alert>}
           </div>
           <DialogFooter className="mt-5">
@@ -499,7 +728,14 @@ export function RunnerRequestDetailsPage() {
                 Not yet
               </Button>
             </DialogClose>
-            <Button onClick={handleAccept} disabled={accepting}>
+            <Button
+              onClick={handleAccept}
+              disabled={
+                accepting ||
+                paymentTermsMissing ||
+                (requiresCashAdvance && !cashAdvanceConsent)
+              }
+            >
               {accepting && <LoaderCircle className="h-4 w-4 animate-spin" />}
               {accepting ? "Accepting…" : "Accept request"}
             </Button>

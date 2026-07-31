@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { FullPageLoader } from "@/components/common/FullPageLoader";
-import { getActiveRole } from "@/lib/constants";
+import { getActiveRole, hasCompletedOnboarding } from "@/lib/constants";
 
 export function RoleRoute({ allowedRole }) {
   const { profile, loading, profileError } = useAuth();
@@ -10,6 +10,8 @@ export function RoleRoute({ allowedRole }) {
     return (
       <Navigate to="/unauthorized" replace state={{ reason: profileError }} />
     );
+  if (!hasCompletedOnboarding(profile))
+    return <Navigate to="/onboarding" replace />;
   if (getActiveRole(profile) !== allowedRole)
     return <Navigate to="/unauthorized" replace />;
   return <Outlet />;

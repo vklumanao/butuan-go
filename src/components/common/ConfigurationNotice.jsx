@@ -4,11 +4,11 @@ import { isDemoMode } from "@/lib/supabase";
 export function ConfigurationNotice() {
   if (isDemoMode) {
     return (
-      <Alert>
-        <AlertTitle>Local interface demo</AlertTitle>
+      <Alert variant="destructive">
+        <AlertTitle>Google sign-in is unavailable in demo mode</AlertTitle>
         <AlertDescription>
-          Supabase is currently disabled. Accounts and profile changes are saved
-          only in this browser.
+          Set <code>VITE_DEMO_MODE=false</code>, configure Supabase, and enable
+          its Google provider to authenticate.
         </AlertDescription>
       </Alert>
     );

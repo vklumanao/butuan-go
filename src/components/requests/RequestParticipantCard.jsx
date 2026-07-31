@@ -57,6 +57,7 @@ export function RequestParticipantCard({
               <AvatarImage
                 src={participant.avatar_url}
                 alt={`${participant.full_name} avatar`}
+                referrerPolicy="no-referrer"
               />
             )}
             <AvatarFallback>{initials(participant.full_name)}</AvatarFallback>

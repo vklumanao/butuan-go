@@ -1,18 +1,32 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2, LoaderCircle, LogOut, Play } from "lucide-react";
+import {
+  CheckCircle2,
+  HandCoins,
+  LoaderCircle,
+  LogOut,
+  Play,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
+  confirmRequestCashAdvance,
   releaseAcceptedRequest,
   startRequest,
   submitRequestCompletion,
 } from "@/services/requestService";
 import { releaseTaskSchema } from "@/validation/requestSchema";
-import { REQUEST_STATUSES } from "@/lib/requestConstants";
+import {
+  PAYMENT_ARRANGEMENTS,
+  PRICE_CHANGE_STATUSES,
+  REQUEST_STATUSES,
+} from "@/lib/requestConstants";
 import { devLog } from "@/lib/errors";
-import { getFriendlyRequestError } from "@/lib/requestUtils";
+import {
+  formatCurrency,
+  getFriendlyRequestError,
+} from "@/lib/requestUtils";
 import { FormField } from "@/components/common/FormField";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -44,7 +58,7 @@ const actionConfig = {
     busyLabel: "Submitting…",
     title: "Submit this task as completed?",
     description:
-      "Submit after arriving at the meetup or delivery location and presenting the completed errand and applicable receipts. The Requestor will then review the result and settle payment directly with you in person.",
+      "Submit after arriving at the meetup or delivery location and presenting the completed errand and applicable receipts. The Requestor will review the result and verify that the selected payer settled directly with you in person.",
     success: "Completion submitted. Waiting for the Requestor’s confirmation.",
     action: submitRequestCompletion,
     icon: CheckCircle2,
@@ -139,13 +153,84 @@ function ReleaseTaskAction({ request }) {
   );
 }
 
-export function RunnerTaskActions({ request, onChanged, hasLocation = true }) {
+export function RunnerTaskActions({
+  request,
+  onChanged,
+  hasLocation = true,
+  priceChanges = [],
+  receipts = [],
+  handoff = null,
+  settlement = null,
+  disputes = [],
+}) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [cashAdvanceDialogOpen, setCashAdvanceDialogOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [confirmingAdvance, setConfirmingAdvance] = useState(false);
   const [actionError, setActionError] = useState("");
   const config = actionConfig[request.status];
+  const needsCashAdvanceConsent =
+    request.status === REQUEST_STATUSES.ACCEPTED &&
+    request.payment_terms?.arrangement ===
+      PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE &&
+    !request.payment_terms.runner_consented_at;
+  const pendingPriceChange = priceChanges.some(
+    (change) => change.status === PRICE_CHANGE_STATUSES.PENDING,
+  );
+  const needsRevisedCashAdvanceConsent =
+    request.status === REQUEST_STATUSES.IN_PROGRESS &&
+    request.payment_terms?.arrangement ===
+      PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE &&
+    request.payment_terms.runner_consented_amount !==
+      request.payment_terms.maximum_advance;
+  const requiresReceipt = [
+    PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID,
+    PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE,
+  ].includes(request.payment_terms?.arrangement);
+  const missingReceipt =
+    request.status === REQUEST_STATUSES.IN_PROGRESS &&
+    requiresReceipt &&
+    request.payment_terms?.receipt_evidence_required !== false &&
+    receipts.length === 0;
+  const handoffNotVerified =
+    request.status === REQUEST_STATUSES.IN_PROGRESS &&
+    !handoff?.verified_at;
+  const paymentNotConfirmed =
+    request.status === REQUEST_STATUSES.IN_PROGRESS &&
+    (!settlement?.runner_confirmed_at ||
+      settlement.runner_received_amount !== settlement.expected_amount);
+  const hasOpenDispute = disputes.some(
+    (dispute) => dispute.status === "OPEN",
+  );
   const cannotStart =
-    request.status === REQUEST_STATUSES.ACCEPTED && !hasLocation;
+    request.status === REQUEST_STATUSES.ACCEPTED &&
+    (!hasLocation || needsCashAdvanceConsent);
+  const cannotSubmit =
+    request.status === REQUEST_STATUSES.IN_PROGRESS &&
+    (pendingPriceChange ||
+      needsRevisedCashAdvanceConsent ||
+      missingReceipt ||
+      handoffNotVerified ||
+      paymentNotConfirmed ||
+      hasOpenDispute);
+  const cannotProceed = cannotStart || cannotSubmit;
+
+  async function confirmCashAdvance() {
+    setConfirmingAdvance(true);
+    setActionError("");
+    const { error } = await confirmRequestCashAdvance(request.id);
+    setConfirmingAdvance(false);
+    if (error) {
+      devLog("Runner cash advance consent failed", error);
+      setActionError(
+        getFriendlyRequestError(error, "confirm this cash advance"),
+      );
+      return;
+    }
+    toast.success("Cash advance consent recorded.");
+    setCashAdvanceDialogOpen(false);
+    await onChanged();
+  }
 
   async function handleAction() {
     setProcessing(true);
@@ -181,6 +266,15 @@ export function RunnerTaskActions({ request, onChanged, hasLocation = true }) {
     );
   }
 
+  if (request.status === REQUEST_STATUSES.FAILED) {
+    return (
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        This task ended with a failed handoff report. Review the report or
+        dispute history for the next step.
+      </p>
+    );
+  }
+
   if (!config) {
     return (
       <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -195,15 +289,57 @@ export function RunnerTaskActions({ request, onChanged, hasLocation = true }) {
     <>
       <p className="mt-2 text-sm leading-6 text-slate-600">
         {cannotStart
-          ? "The Requestor must add complete private location details before you can start this task. You may release it if you cannot wait."
+          ? needsCashAdvanceConsent
+            ? "Confirm the maximum cash advance before starting this task."
+            : "The Requestor must add complete private location details before you can start this task. You may release it if you cannot wait."
+          : cannotSubmit
+            ? pendingPriceChange
+              ? "Wait for the Requestor to decide the price change, or withdraw it, before submitting."
+              : needsRevisedCashAdvanceConsent
+                ? "Confirm the approved cash-advance limit before submitting."
+                : missingReceipt
+                  ? "Upload at least one private purchase receipt before submitting."
+                  : handoffNotVerified
+                    ? "Verify the Requestor's six-digit handoff code before submitting."
+                    : paymentNotConfirmed
+                      ? "Confirm that you received the documented direct payment before submitting."
+                      : "An open dispute must be withdrawn or resolved before submitting."
           : request.status === REQUEST_STATUSES.ACCEPTED
-          ? "Start the task when you are ready to begin the errand."
-          : "Submit the task when the requested errand has been completed."}
+            ? "Start the task when you are ready to begin the errand."
+            : "Submit the task when the requested errand has been completed."}
       </p>
+      {needsCashAdvanceConsent && (
+        <Button
+          variant="outline"
+          className="mt-4 w-full border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
+          onClick={() => setCashAdvanceDialogOpen(true)}
+        >
+          <HandCoins className="h-4 w-4" />
+          Review cash advance
+        </Button>
+      )}
       <Button
         className="mt-5 w-full"
-        disabled={cannotStart}
-        title={cannotStart ? "Complete private location details are required." : undefined}
+        disabled={cannotProceed}
+        title={
+          cannotProceed
+            ? needsCashAdvanceConsent
+              ? "Cash advance consent is required."
+              : !hasLocation
+                ? "Complete private location details are required."
+                : pendingPriceChange
+                  ? "The price-change request is still pending."
+                  : needsRevisedCashAdvanceConsent
+                    ? "The revised cash-advance limit needs your consent."
+                    : missingReceipt
+                      ? "A purchase receipt is required."
+                      : handoffNotVerified
+                        ? "Handoff verification is required."
+                        : paymentNotConfirmed
+                          ? "Direct payment confirmation is required."
+                          : "An open dispute is blocking completion."
+            : undefined
+        }
         onClick={() => setDialogOpen(true)}
       >
         <Icon className="h-4 w-4" />
@@ -238,6 +374,49 @@ export function RunnerTaskActions({ request, onChanged, hasLocation = true }) {
             <Button onClick={handleAction} disabled={processing}>
               {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
               {processing ? config.busyLabel : config.label}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={cashAdvanceDialogOpen}
+        onOpenChange={(open) => {
+          setCashAdvanceDialogOpen(open);
+          if (!open) setActionError("");
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm your cash advance limit</DialogTitle>
+            <DialogDescription>
+              Confirm only if you voluntarily agree to use your own money for
+              this task.
+            </DialogDescription>
+          </DialogHeader>
+          <Alert className="border-amber-200 bg-amber-50 text-amber-950">
+            You agree to advance up to{" "}
+            <strong>
+              {formatCurrency(request.payment_terms?.maximum_advance)}
+            </strong>
+            . ButuanGo records this consent but does not hold or guarantee the
+            reimbursement.
+          </Alert>
+          {actionError && <Alert variant="destructive">{actionError}</Alert>}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={confirmingAdvance}>
+                Not yet
+              </Button>
+            </DialogClose>
+            <Button
+              onClick={confirmCashAdvance}
+              disabled={confirmingAdvance}
+            >
+              {confirmingAdvance && (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              )}
+              {confirmingAdvance ? "Confirming…" : "I agree to this limit"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -10,7 +10,7 @@ export async function getNotifications(limit = 30) {
   return supabase
     .from("notifications")
     .select(
-      "id, user_id, request_id, type, title, message, read_at, created_at",
+      "id, user_id, request_id, type, target_role, title, message, read_at, created_at",
     )
     .order("created_at", { ascending: false })
     .limit(limit);

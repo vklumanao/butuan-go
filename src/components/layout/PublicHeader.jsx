@@ -49,13 +49,10 @@ export function PublicHeader() {
               </a>
             ))}
           </nav>
-          <Button variant="ghost" asChild className="hidden sm:inline-flex">
-            <Link to="/login">Log in</Link>
-          </Button>
           <Button asChild className="shrink-0 px-3 sm:px-4">
-            <Link to="/register">
-              <span className="sm:hidden">Join</span>
-              <span className="hidden sm:inline">Create account</span>
+            <Link to="/login">
+              <span className="sm:hidden">Continue</span>
+              <span className="hidden sm:inline">Continue with Google</span>
             </Link>
           </Button>
         </div>

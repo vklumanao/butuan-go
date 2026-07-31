@@ -2,12 +2,16 @@ import { useMemo, useState } from "react";
 import {
   Bell,
   BellOff,
+  BanknoteArrowUp,
   CheckCheck,
   ChevronRight,
   CircleCheckBig,
   CircleX,
   ClipboardCheck,
+  KeyRound,
   MapPin,
+  Scale,
+  ShieldAlert,
   Play,
   RefreshCw,
   RotateCcw,
@@ -64,6 +68,50 @@ const notificationVisuals = {
   },
   REQUEST_CANCELLED: {
     icon: CircleX,
+    iconClass: "bg-red-100 text-red-700 ring-red-200",
+  },
+  PRICE_CHANGE_REQUESTED: {
+    icon: BanknoteArrowUp,
+    iconClass: "bg-amber-100 text-amber-700 ring-amber-200",
+  },
+  PRICE_CHANGE_APPROVED: {
+    icon: CircleCheckBig,
+    iconClass: "bg-emerald-100 text-emerald-700 ring-emerald-200",
+  },
+  PRICE_CHANGE_DECLINED: {
+    icon: CircleX,
+    iconClass: "bg-red-100 text-red-700 ring-red-200",
+  },
+  HANDOFF_VERIFIED: {
+    icon: KeyRound,
+    iconClass: "bg-emerald-100 text-emerald-700 ring-emerald-200",
+  },
+  PAYMENT_CONFIRMED: {
+    icon: CircleCheckBig,
+    iconClass: "bg-emerald-100 text-emerald-700 ring-emerald-200",
+  },
+  REQUEST_FAILED: {
+    icon: CircleX,
+    iconClass: "bg-red-100 text-red-700 ring-red-200",
+  },
+  FAILURE_ACKNOWLEDGED: {
+    icon: ClipboardCheck,
+    iconClass: "bg-sky-100 text-sky-700 ring-sky-200",
+  },
+  DISPUTE_OPENED: {
+    icon: Scale,
+    iconClass: "bg-amber-100 text-amber-700 ring-amber-200",
+  },
+  DISPUTE_WITHDRAWN: {
+    icon: Scale,
+    iconClass: "bg-slate-100 text-slate-700 ring-slate-200",
+  },
+  DISPUTE_RESOLVED: {
+    icon: Scale,
+    iconClass: "bg-emerald-100 text-emerald-700 ring-emerald-200",
+  },
+  ACCOUNT_RESTRICTED: {
+    icon: ShieldAlert,
     iconClass: "bg-red-100 text-red-700 ring-red-200",
   },
 };
@@ -131,20 +179,26 @@ function getNotificationPath(notification, role) {
 }
 
 function getNotificationRole(notification, fallbackRole) {
+  if (notification.target_role) return notification.target_role;
   if (
     [
       "REQUEST_ACCEPTED",
       "REQUEST_STARTED",
       "COMPLETION_SUBMITTED",
       "RUNNER_RELEASED",
+      "PRICE_CHANGE_REQUESTED",
     ].includes(notification.type)
   ) {
     return USER_ROLES.REQUESTOR;
   }
   if (
-    ["REQUEST_COMPLETED", "LOCATION_UPDATED", "REQUEST_CANCELLED"].includes(
-      notification.type,
-    )
+    [
+      "REQUEST_COMPLETED",
+      "LOCATION_UPDATED",
+      "REQUEST_CANCELLED",
+      "PRICE_CHANGE_APPROVED",
+      "PRICE_CHANGE_DECLINED",
+    ].includes(notification.type)
   ) {
     return USER_ROLES.RUNNER;
   }
