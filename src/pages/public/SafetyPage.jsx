@@ -30,7 +30,7 @@ export function SafetyPage() {
       documentKey="safety"
       title="Community safety"
       description="Practical checks for safer local errands, clearer handoffs, and responsible in-person coordination."
-      lastUpdated="July 18, 2026"
+      lastUpdated="July 31, 2026"
       readingTime="5 min"
       sections={SAFETY_SECTIONS}
     >
@@ -46,9 +46,9 @@ export function SafetyPage() {
         </p>
         <p>
           Before accepting, a Runner should review the full estimate, distance,
-          due time, and whether the errand may require temporarily covering a
-          purchase. Accept only work that is lawful, understandable, and within
-          your practical capacity.
+          due time, payer, and payment arrangement. A cash advance is voluntary;
+          accept it only when the displayed maximum is within your practical
+          capacity and the task is lawful and understandable.
         </p>
       </LegalSection>
 
@@ -88,15 +88,27 @@ export function SafetyPage() {
         icon={HandCoins}
       >
         <p>
-          Payment happens directly in person after the Requestor and Runner
-          meet. Review the item, official receipt, actual expense, and agreed
-          service fee together before settling.
+          The selected Requestor or recipient pays the Runner directly in
+          person. Review the payment arrangement, payer, item, official receipt,
+          actual expense, and agreed service fee together before settling.
         </p>
         <p>
-          Discuss any price change before the purchase whenever possible. Keep
-          official receipts, avoid carrying unnecessary cash, and remember that
-          ButuanGo does not provide escrow, refunds, payment guarantees, or
-          transaction dispute handling.
+          A Runner should accept a cash advance only voluntarily and only up to
+          the displayed maximum. If the price becomes higher, submit the new
+          limit in the task and wait for the Requestor's approval before buying;
+          after approval, confirm the revised limit first. Upload only the
+          relevant official receipt, avoid including unrelated personal or
+          banking information, avoid carrying unnecessary cash, and remember
+          that ButuanGo does not provide escrow, refunds, payment guarantees, or
+          guaranteed dispute outcomes or fund recovery.
+        </p>
+        <p>
+          The Requestor should share the six-digit handoff code only when the
+          correct person and delivery are present and the selected payer is
+          ready to review settlement. Do not post the code publicly or send it
+          to an unrelated person. The Runner should verify it in the assigned
+          task and record only the amount actually received; the Requestor
+          separately confirms settlement at completion.
         </p>
       </LegalSection>
 
@@ -133,6 +145,13 @@ export function SafetyPage() {
           Participants should stop and prioritize safety if continuing would be
           unlawful or dangerous.
         </p>
+        <p>
+          If a handoff cannot be completed, the Runner should choose the most
+          accurate failed-delivery reason and describe only relevant facts. A
+          participant may open a dispute when the recorded facts or settlement
+          are contested. Do not include passwords, banking credentials, or
+          unrelated private information in either record.
+        </p>
       </LegalSection>
 
       <LegalSection
@@ -159,8 +178,11 @@ export function SafetyPage() {
         <p>
           This milestone does not provide identity verification, background
           checks, insurance, guarantees, emergency monitoring, location
-          tracking, or formal dispute resolution. A profile, role label, or task
-          assignment is not proof that a participant has been verified.
+          tracking, or a staffed dispute-response team. The app can preserve a
+          dispute and an authorized Admin can record an outcome, but review is
+          not guaranteed and is not emergency or legal assistance. A profile,
+          role label, or task assignment is not proof that a participant has
+          been verified.
         </p>
       </LegalSection>
     </LegalPageLayout>

@@ -1,44 +1,24 @@
-import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { supabase, isDemoMode, isSupabaseConfigured } from "@/lib/supabase";
 import { getDemoSession, subscribeToDemoAuth } from "@/services/demoService";
-import { signInWithEmail, signOutUser, signUpWithEmail } from "@/services/authService";
+import { signInWithGoogle, signOutUser } from "@/services/authService";
 import { getProfile, switchProfileActiveRole } from "@/services/profileService";
 import { devLog } from "@/lib/errors";
 
 export const AuthContext = createContext(null);
-
-const PASSWORD_RECOVERY_STORAGE_KEY = "butuango-password-recovery-user";
-
-function getStoredRecoveryUserId() {
-  try {
-    return window.sessionStorage.getItem(PASSWORD_RECOVERY_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function storeRecoveryUserId(userId) {
-  try {
-    window.sessionStorage.setItem(PASSWORD_RECOVERY_STORAGE_KEY, userId);
-  } catch {
-    // Recovery still works for the current page when session storage is unavailable.
-  }
-}
-
-function clearStoredRecoveryUserId() {
-  try {
-    window.sessionStorage.removeItem(PASSWORD_RECOVERY_STORAGE_KEY);
-  } catch {
-    // There is no stored marker to clear when session storage is unavailable.
-  }
-}
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState(null);
-  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const activeUserId = useRef(null);
   const profileRef = useRef(null);
   const profileRequestRef = useRef(null);
@@ -72,8 +52,6 @@ export function AuthProvider({ children }) {
       if (!mounted) return;
       setSession(nextSession);
       if (!nextSession?.user) {
-        clearStoredRecoveryUserId();
-        setIsPasswordRecovery(false);
         activeUserId.current = null;
         profileRef.current = null;
         setProfile(null);
@@ -85,7 +63,6 @@ export function AuthProvider({ children }) {
     }
 
     if (isDemoMode) {
-      clearStoredRecoveryUserId();
       applySession(getDemoSession());
       const unsubscribe = subscribeToDemoAuth(applySession);
       return () => { mounted = false; unsubscribe(); };
@@ -97,33 +74,16 @@ export function AuthProvider({ children }) {
       if (!mounted) return;
       if (error) devLog("Session retrieval failed", error);
       const currentSession = data?.session || null;
-      const recoveryUserId = getStoredRecoveryUserId();
-      const hasMatchingRecoverySession = Boolean(
-        currentSession?.user?.id && recoveryUserId === currentSession.user.id,
-      );
-      if (!hasMatchingRecoverySession) clearStoredRecoveryUserId();
-      setIsPasswordRecovery(hasMatchingRecoverySession);
       setSession(currentSession);
       if (currentSession?.user) await loadProfile(currentSession.user.id);
       if (mounted) setLoading(false);
     }
     initialize();
-    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (event === "PASSWORD_RECOVERY" && nextSession?.user?.id) {
-        storeRecoveryUserId(nextSession.user.id);
-        setIsPasswordRecovery(true);
-      } else if (event === "SIGNED_OUT" || !nextSession?.user) {
-        clearStoredRecoveryUserId();
-        setIsPasswordRecovery(false);
-      } else {
-        const recoveryUserId = getStoredRecoveryUserId();
-        if (recoveryUserId && recoveryUserId !== nextSession.user.id) {
-          clearStoredRecoveryUserId();
-          setIsPasswordRecovery(false);
-        }
-      }
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, nextSession) => {
       setTimeout(() => applySession(nextSession), 0);
-    });
+      },
+    );
     return () => { mounted = false; listener.subscription.unsubscribe(); };
   }, [loadProfile]);
 
@@ -137,9 +97,8 @@ export function AuthProvider({ children }) {
   }, [session, loadProfile]);
   const value = useMemo(() => ({
     user: session?.user || null, profile, session, loading, profileError,
-    isPasswordRecovery,
-    signIn: signInWithEmail, signUp: signUpWithEmail, signOut: signOutUser, refreshProfile, switchRole,
-  }), [session, profile, loading, profileError, isPasswordRecovery, refreshProfile, switchRole]);
+    signInWithGoogle, signOut: signOutUser, refreshProfile, switchRole,
+  }), [session, profile, loading, profileError, refreshProfile, switchRole]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

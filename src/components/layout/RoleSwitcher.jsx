@@ -32,6 +32,8 @@ export function RoleSwitcher({ className = "", onSwitched }) {
   const targetRole =
     activeRole === USER_ROLES.RUNNER ? USER_ROLES.REQUESTOR : USER_ROLES.RUNNER;
 
+  if (activeRole === USER_ROLES.ADMIN) return null;
+
   function changeDialog(openState) {
     setOpen(openState);
     if (!openState) setSwitchError("");

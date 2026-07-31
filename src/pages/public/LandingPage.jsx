@@ -211,8 +211,8 @@ export function LandingPage() {
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Button size="lg" asChild className="group sm:w-auto">
-                  <Link to="/register">
-                    Create an account
+                  <Link to="/login">
+                    Continue with Google
                     <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                   </Link>
                 </Button>
@@ -427,8 +427,8 @@ export function LandingPage() {
                     ))}
                   </ul>
                   <Button asChild className="group mt-7">
-                    <Link to="/register">
-                      Start with this workspace
+                    <Link to="/login">
+                      Continue with Google
                       <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Link>
                   </Button>
@@ -513,8 +513,8 @@ export function LandingPage() {
               size="lg"
               className="group mt-7"
             >
-              <Link to="/register">
-                Create your account
+              <Link to="/login">
+                Continue with Google
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Link>
             </Button>

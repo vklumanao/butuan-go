@@ -1,12 +1,12 @@
 # ButuanGo
 
-ButuanGo is a local task-request marketplace foundation for Requestors who need help with everyday errands and Runners who want to complete local tasks. The working first milestone delivers real Supabase authentication, database-backed profiles, role-aware routing, separate dashboards, and secure profile updates. Milestone 2 now includes the secure request domain, Requestor creation/editing/cancellation, and Runner browsing/atomic acceptance.
+ButuanGo is a local task-request marketplace foundation for Requestors who need help with everyday errands and Runners who want to complete local tasks. The current development milestone includes real Supabase authentication, role-aware workspaces, a secure request lifecycle, privacy-preserving nearby discovery, explicit payment arrangements and evidence, verified handoff, direct-settlement confirmation, failed-delivery reporting, and participant disputes.
 
 ## Milestone scope
 
-Included: responsive landing and account UI, Requestor/Runner starting-mode registration, secure Requestor/Runner workspace switching, login, persistent sessions, logout confirmation, automatic profile creation, protected and active-role routes, profile editing, request creation and acceptance, privacy-preserving nearby discovery with interactive map and list views, post-acceptance directions, secure in-app realtime notifications, loading/error states, SQL schema, triggers, and Row-Level Security.
+Included: responsive landing and account UI, Google-only authentication, mandatory first-time profile onboarding, secure Requestor/Runner workspace switching, persistent sessions, logout confirmation, automatic profile creation, protected and active-role routes, profile editing, request creation and acceptance, explicit direct-payment arrangements, Runner cash-advance consent, price-change approval, private receipt evidence, private handoff-code verification, two-sided direct-settlement confirmation, failed-delivery reporting, participant disputes, a protected Admin operations dashboard and audit trail, privacy-preserving nearby discovery with interactive map and list views, post-acceptance directions, secure in-app realtime notifications, loading/error states, SQL schema, triggers, Storage policies, and Row-Level Security.
 
-Excluded from the current UI: email/SMS/browser-push notifications, platform-processed payments/GCash/escrow, chat, live GPS tracking, ratings, reviews, AI, identity verification, government transactions, and administration UI.
+Excluded from the current UI: email/SMS/browser-push notifications, platform-processed payments/GCash/escrow, chat, live GPS tracking, ratings, reviews, AI, identity verification, government transactions, automated moderation, and destructive account deletion.
 
 ## Technology
 
@@ -16,7 +16,7 @@ Excluded from the current UI: email/SMS/browser-push notifications, platform-pro
 - Lucide React icons and Sonner notifications
 - React Hook Form, Zod, and the Zod resolver
 - MapLibre GL JS with a configurable vector basemap style
-- Supabase Authentication and PostgreSQL
+- Supabase Authentication, PostgreSQL, and private Storage
 
 ## Prerequisites
 
@@ -58,24 +58,33 @@ Never commit `.env` or expose a Supabase service-role key in Vite. Restart the d
 11. Run `supabase/migrations/009_dual_role_mode.sql`, then run `supabase/verify_dual_role_mode.sql`. This adds the secure active workspace, role-switch RPC, profile protections, and initialization for existing accounts.
 12. Run `supabase/migrations/010_account_saved_addresses.sql`, then run `supabase/verify_account_saved_addresses.sql`. This makes the private address book available from either workspace without weakening owner-only access.
 13. Run `supabase/migrations/011_approximate_request_geography.sql`, then run `supabase/verify_approximate_request_geography.sql`. This adds server-rounded neighborhood coordinates, secure Requestor mutation RPCs, local nearby filtering, and directions from participant-only addresses.
-14. Under **Authentication → URL Configuration**, set the Site URL to `http://localhost:5173` for local development. Add `http://localhost:5173/auth/callback` and `http://localhost:5173/reset-password` to the allowed redirect URLs. Add their production equivalents after deployment.
-15. Under **Authentication → Providers → Email**, keep Email enabled. Choose whether **Confirm email** is required.
+14. Run `supabase/migrations/012_request_payment_terms.sql`, then run `supabase/verify_request_payment_terms.sql`. This adds explicit payment arrangements, private payer details, maximum Runner cash-advance exposure, atomic acceptance consent, and a start-task consent guard.
+15. Run `supabase/migrations/013_payment_evidence.sql`, then run `supabase/verify_payment_evidence.sql`. This adds higher-price approval, renewed Runner consent, participant-only receipt metadata, the private `request-receipts` Storage bucket, and guarded completion RPCs.
+16. Run `supabase/migrations/014_handoff_settlement_disputes.sql`, then run `supabase/verify_handoff_settlement_disputes.sql`. This adds private handoff codes, two-sided direct-payment confirmation, terminal failed-delivery reports, participant disputes, Admin resolution RPCs, and temporary account restrictions.
+17. Run `supabase/migrations/015_google_only_auth.sql`, then run `supabase/verify_google_only_auth.sql`. This adds mandatory Google-user onboarding, versioned acceptance records, and a database authorization gate for incomplete profiles.
+18. Run `supabase/migrations/016_google_profile_avatars.sql`, then run `supabase/verify_google_profile_avatars.sql`. This backfills existing Google profile photos and keeps them synchronized when Google refreshes the user's avatar metadata.
+19. Run `supabase/migrations/017_admin_dashboard.sql`, then run `supabase/verify_admin_dashboard.sql`. This adds Admin-only operational read APIs, the protected Admin audit trail, and audit triggers for dispute and restriction actions.
+20. Under **Authentication → URL Configuration**, set the Site URL to `http://localhost:5173` for local development. Add `http://localhost:5173/auth/callback` to the allowed redirect URLs, then add its exact production equivalent after deployment.
+21. In Google Cloud, create a Web OAuth client and register `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback` as an authorized redirect URI. Under **Supabase Authentication → Providers → Google**, enable Google and enter that client ID and secret.
+22. Disable public Email authentication in Supabase after confirming the Google flow. The application intentionally exposes no password registration, password login, or password-recovery routes.
 
-If email confirmation is enabled, registration shows inbox instructions and the confirmation link returns through `/auth/callback`. If disabled, Supabase returns a session and the user is immediately routed to the selected dashboard. Password-recovery emails return through `/reset-password`.
+New Google users return through `/auth/callback` and are sent to `/onboarding`. Returning users with completed profiles go directly to their current Requestor or Runner dashboard.
 
 ### Local demo mode
 
-Set `VITE_DEMO_MODE=true` to exercise registration, login, role routing, profile updates, password recovery, session refresh, and logout without contacting Supabase. Demo accounts are stored in browser local storage, including their test passwords, so use fictional information only. Set the value to `false` and configure the Supabase variables when moving to backend testing.
+Google OAuth does not run in local demo mode. Use `VITE_DEMO_MODE=false` with a configured Supabase project to sign in. Existing browser-only demo sessions remain readable for interface testing, but the application no longer creates or authenticates demo password accounts.
 
 ### How profile creation works
 
-Registration sends `full_name`, `phone_number`, and the selected starting `role` as authenticated user metadata. The `on_auth_user_created` PostgreSQL trigger runs as a security-definer after an Auth user is inserted and creates the matching `public.profiles` row. It stores the selection as both the immutable registration role and initial `active_role`. Public registration accepts only `requestor` and `runner`; missing or invalid metadata safely defaults to `requestor`. Admin can exist in the table but is never offered by public registration or workspace switching and must be assigned through a trusted server/database administration process.
+The `on_auth_user_created` PostgreSQL trigger runs as a security-definer when Google creates a Supabase Auth user. It creates a safe, incomplete `public.profiles` row using the Google name, email, and optional avatar metadata. An incomplete profile receives no marketplace role from `private.current_profile_role`, even if the browser attempts to bypass the onboarding route.
 
-The frontend does not perform a second profile insert. This avoids partial or duplicate profile creation. If the profile trigger is not installed or fails, login reports a missing-profile error instead of hanging.
+The Google avatar is shown during onboarding, on the profile page, in desktop and mobile account navigation, and in participant cards after request acceptance. `016_google_profile_avatars.sql` backfills older Google accounts and synchronizes later Google avatar metadata changes. The interface falls back to the user's initials when Google provides no image or the remote image cannot be loaded.
+
+The authenticated user completes their own profile through `complete_account_onboarding`, providing a phone number, selecting Requestor or Runner, and accepting the current Terms, Privacy Notice, and Safety guidance. The RPC records the initial and active role plus the acceptance version and timestamp. It cannot assign Admin. Admin profiles remain trusted backend assignments and are never offered by Google onboarding or workspace switching.
 
 ### Row-Level Security
 
-RLS is enabled on `profiles`. Authenticated users can select and update only the row whose ID matches `auth.uid()`; anonymous users receive no table privileges. Direct update grants are limited to `full_name`, `phone_number`, and `avatar_url`. A database trigger rejects changes to `id`, `email`, the registration `role`, or direct manipulation of `active_role`. Only the ownership-checking `switch_active_role` RPC may change the active workspace, and it accepts only `requestor` or `runner`.
+RLS is enabled on `profiles`. Authenticated users can select and update only the row whose ID matches `auth.uid()`; anonymous users receive no table privileges. Direct update grants are limited to `full_name`, `phone_number`, and `avatar_url`. A database trigger rejects changes to identity, signup method, onboarding records, the initial role, or direct manipulation of `active_role`. Only the one-time onboarding RPC may set the first normal role, and only `switch_active_role` may later change the active Requestor/Runner workspace.
 
 ### Request-domain database foundation
 
@@ -87,7 +96,7 @@ The supported lifecycle is:
 
 ```text
 OPEN → ACCEPTED → IN_PROGRESS → AWAITING_CONFIRMATION → COMPLETED
-  └→ CANCELLED
+  └→ CANCELLED          └→ FAILED
 ```
 
 ### In-app notifications
@@ -140,11 +149,11 @@ To verify recovery, accept a request as a Runner but do not start it. Release it
 
 ### Dual Requestor and Runner workspaces
 
-`supabase/migrations/009_dual_role_mode.sql` allows one normal account to use both public marketplace workspaces. Registration chooses only the starting mode. The original `profiles.role` is retained for account history, while `profiles.active_role` controls route guards, navigation, and role-gated database RPCs. Switching does not log the user out and does not change request ownership, Runner assignments, history, notifications, or capacity.
+`supabase/migrations/009_dual_role_mode.sql` allows one normal account to use both public marketplace workspaces. Google onboarding chooses only the starting mode. The original `profiles.role` is retained for account history, while `profiles.active_role` controls route guards, navigation, and role-gated database RPCs. Switching does not log the user out and does not change request ownership, Runner assignments, history, notifications, or capacity.
 
 Request queries are explicitly scoped by context: Requestor pages require `requestor_id = auth user`, Runner task pages require `runner_id = auth user`, and the available marketplace excludes requests posted by that same account. The acceptance RPC independently prevents self-acceptance. Notifications identify their intended workspace and securely switch before opening the related page when necessary.
 
-To verify dual mode, register with either starting mode and use the sidebar or mobile account menu to switch. Create a request in Requestor mode, switch to Runner mode, and confirm your own request is absent from Available Requests. Accept a different account's request, switch back to Requestor, and confirm the assigned task does not appear under My Requests. Switch to Runner again and confirm the assignment and capacity state remain intact.
+To verify dual mode, complete Google onboarding with either starting mode and use the sidebar or mobile account menu to switch. Create a request in Requestor mode, switch to Runner mode, and confirm your own request is absent from Available Requests. Accept a different account's request, switch back to Requestor, and confirm the assigned task does not appear under My Requests. Switch to Runner again and confirm the assignment and capacity state remain intact.
 
 ### Privacy-preserving nearby discovery
 
@@ -160,20 +169,46 @@ To verify the flow, create a request and open **Choose on map**. Search for a ba
 
 ### In-person settlement policy
 
-ButuanGo does not collect, hold, transfer, refund, or process funds in this milestone. The Requestor pays the Runner directly during meetup or delivery, after reviewing the completed errand and applicable receipts. The stored expense budget and service fee are estimates and user agreements, not platform charges or proof of payment.
+ButuanGo does not collect, hold, transfer, refund, or process funds in this milestone. Each request explicitly uses **No purchase expense**, **Merchant already paid**, or **Runner cash advance**, and identifies whether the Requestor or recipient will pay the Runner directly at meetup or delivery. The stored expense budget and service fee are estimates and user agreements, not platform charges or proof of payment.
 
-The Requestor should confirm completion only after receiving the item or service and settling the agreed amount in person. Users should agree on any cost change before purchase, keep applicable receipts, meet safely, and never share a PIN, OTP, password, banking credential, or payment account access. The application intentionally has no wallet, paid status, payout balance, escrow record, or online transaction history.
+For a cash advance, the expense budget is the maximum amount the Runner is asked to cover. The Runner sees that exposure before acceptance and must explicitly consent; the database records the consent amount and time and prevents the task from starting without it. Consent is voluntary and is not a reimbursement guarantee. Users should agree on any cost change before purchase, keep applicable receipts, meet safely, and never share a PIN, OTP, password, banking credential, or payment account access. The application intentionally has no wallet, paid status, payout balance, escrow record, or online transaction history.
+
+`request_payment_terms` exposes only the arrangement, payer type, maximum advance, and consent state to eligible marketplace users. Private payer name, payer phone, and prepaid merchant reference are stored separately in `request_payment_details`; only the Requestor and assigned Runner can read them through RLS.
+
+### Price changes and private receipts
+
+`supabase/migrations/013_payment_evidence.sql` handles increases to a Runner cash-advance limit after work starts. A Runner may request a higher maximum with a reason, but must wait for the Requestor to approve or decline it. Approval clears the old consent, and the Runner must explicitly consent to the revised maximum before uploading the purchase receipt or submitting completion. Declining leaves the original maximum unchanged. A Runner may also withdraw a still-pending request.
+
+Purchase receipts are stored in the private `request-receipts` Storage bucket, while participant-only metadata records the receipt amount, original file name, size, and optional note. Only the owning Requestor and assigned Runner can read the files. The assigned Runner may upload or remove receipts only while the task is `IN_PROGRESS`. JPG, PNG, WebP, and PDF files up to 5 MB are accepted, with a maximum of eight receipts per task.
+
+For **Merchant already paid** and **Runner cash advance**, the database blocks completion submission until at least one receipt is registered. It also blocks submission while a price change is pending or revised Runner consent is missing. The Requestor must acknowledge reviewing the receipts before final completion. These records support task accountability but still do not prove that direct reimbursement or the service fee was paid.
+
+To verify the Phase 2 flow, start a Runner-cash-advance task, request a higher limit, and confirm the Requestor receives a notification. Approve it, verify the Runner receives a decision notification, and confirm receipt upload remains locked until the Runner accepts the revised limit. Upload a fictional receipt, submit completion, open the receipt as the Requestor, check the review acknowledgement, and confirm completion. Repeat with a declined and withdrawn price change, and verify an unrelated account cannot select the metadata or open a signed receipt URL.
+
+### Secure handoff, settlement, and resolution
+
+`supabase/migrations/014_handoff_settlement_disputes.sql` creates a private six-digit handoff code when a task starts. Only the owning Requestor can retrieve the code; the assigned Runner receives only verification state and five attempts. Purchase evidence and price changes lock after successful verification. The Runner must then explicitly confirm receiving the documented direct amount—actual Runner-advance receipt total plus fee, or only the fee for prepaid/no-purchase tasks—before completion can be submitted. The Requestor separately confirms direct settlement during final completion.
+
+Before verification and payment confirmation, a Runner may permanently mark an `IN_PROGRESS` task as `FAILED` with a structured reason and description. This releases Runner capacity, preserves the assignment and participant records, and notifies the Requestor. The Requestor may acknowledge the report without admitting agreement. Either participant may open one dispute for an in-progress, awaiting-confirmation, failed, or recently completed request; an open dispute pauses completion and may be withdrawn by its author.
+
+An authenticated profile whose active role is `admin` receives a protected operations workspace at `/admin/dashboard`. It provides live summary counts, request oversight without exact private locations, an account directory, dispute resolution, active-restriction clearing, and an Admin audit log. The existing `admin_resolve_request_dispute` RPC may optionally apply a temporary restriction only after an upheld dispute. Restrictions prevent creating or accepting new requests while allowing existing responsibilities to be reviewed or completed.
+
+Admin access is never offered by Google onboarding or workspace switching. The trusted Google account must sign in once, then an operator runs `supabase/provision_admin.sql` manually after replacing its placeholder with the exact email. The database trigger-protected update assigns both Admin role fields and completes the protected profile state. There are no demo Admin credentials and no browser-accessible Admin provisioning function.
+
+To verify Admin operations, provision a dedicated trusted Google account, sign out and back in, and confirm redirect to `/admin/dashboard`. Confirm a normal account cannot open any `/admin` route or call any `admin_list_*` RPC. Open a test dispute between two normal accounts, resolve it with a written outcome, optionally apply a short restriction only for an upheld result, and verify participant notifications plus audit events. Clear the restriction from Accounts and verify a second audit event is recorded.
 
 ### Post-acceptance lifecycle verification
 
 1. As a Runner, accept an open request and open it under **My Tasks**.
 2. Select **Start Task**, confirm the dialog, and verify the status and history change to `IN_PROGRESS`.
 3. Confirm the Requestor receives a **Task started** notification.
-4. As the Runner, select **Submit for Confirmation** and verify the status becomes `AWAITING_CONFIRMATION`.
-5. Confirm the Requestor receives a completion-confirmation notification and sees **Confirm Completion** on the request details page.
-6. As the Requestor, confirm completion and verify the final status is `COMPLETED`.
-7. Confirm the Runner receives a completion notification and neither role sees another lifecycle action.
-8. Reopen each dashboard and confirm the live summary counts reflect the final state.
+4. For a purchase arrangement, upload at least one fictional private receipt. If the price increased under Runner advance, complete its approval and renewed-consent flow first.
+5. Ask the Requestor for the private handoff code, verify it as Runner, and confirm receiving the documented direct payment.
+6. As the Runner, select **Submit for Confirmation** and verify the status becomes `AWAITING_CONFIRMATION`.
+7. Confirm the Requestor receives a completion-confirmation notification, can open the private receipt, and sees **Confirm Completion**.
+8. As the Requestor, acknowledge the receipt review when required, confirm direct payment, and verify the final status is `COMPLETED`.
+9. Confirm the Runner receives a completion notification and neither role sees another lifecycle action.
+10. Reopen each dashboard and confirm the live summary counts reflect the final state.
 
 ### Requestor workflow verification
 
@@ -182,7 +217,7 @@ The Requestor should confirm completion only after receiving the item or service
 3. Complete **Task**, then select **Continue** and confirm incomplete fields keep the user on that step.
 4. Under **Location**, verify the fulfillment type and exact task details appear first with a **Shown after acceptance** label. Confirm the general area follows with a **Shown before acceptance** label and the map remains optional and collapsed until selected.
 5. Choose a fulfillment type and confirm only its required pickup/destination fields appear. Select **Continue** and verify the values remain intact after using **Back**.
-6. Under **Budget & review**, enter non-negative amounts, optionally select a future deadline, and verify the task, public area, fulfillment type, and estimated total summary.
+6. Under **Budget & review**, enter non-negative amounts, choose a payment arrangement and payer, optionally select a future deadline, and verify the task, public area, fulfillment type, payment arrangement, and expected amount paid to the Runner.
 7. Post the request, confirm redirect to `/requestor/requests/:requestId`, and verify the initial `OPEN` status plus `CREATED` history entry.
 8. Return to **My Requests** and confirm the real request appears.
 9. Open the Requestor dashboard and confirm the Open Requests count uses live data.
@@ -192,7 +227,7 @@ The Requestor should confirm completion only after receiving the item or service
 
 1. As a Requestor, edit an `OPEN` request and confirm an `UPDATED` history entry appears.
 2. Cancel another `OPEN` request, provide a reason, and confirm its status becomes `CANCELLED` and it disappears from the Runner marketplace.
-3. As a Runner, open `/runner/requests`, select an `OPEN` request, and accept it.
+3. As a Runner, open `/runner/requests`, verify each card and map popup show the payment arrangement, and open an `OPEN` request. For a Runner cash advance, confirm the displayed maximum before accepting.
 4. Confirm the request moves from **Available Requests** to **My Tasks** with status `ACCEPTED`.
 5. Confirm the original Requestor can no longer edit or cancel the accepted request.
 6. With a second Runner account, confirm the accepted request is no longer available and cannot be accepted again.
@@ -207,17 +242,35 @@ npm run build
 npm run preview
 ```
 
-### Test Requestor and Runner accounts
+## Firebase Hosting
 
-1. Visit `/register`, enter valid information, and choose Requestor.
-2. Confirm the email if the Supabase project requires it, then log in.
-3. Verify redirect to `/requestor/dashboard`, open `/requestor/profile`, edit the name or phone, and log out.
-4. Register a second email as Runner and verify redirect to `/runner/dashboard`.
-5. While logged in as Runner, open `/requestor/dashboard`; it should redirect to `/unauthorized`. Repeat in reverse with the Requestor account.
-6. Refresh a dashboard to verify the Supabase session persists.
-7. Log out, then open either dashboard URL; it should redirect to `/login`.
+The production frontend is linked to the Firebase project
+`butuango-vklum-2026` and its `butuan-go` Hosting site is available at
+`https://butuan-go.web.app`. Firebase serves the Vite `dist`
+directory, rewrites client-side routes to `index.html`, prevents stale caching
+of the app shell, and caches fingerprinted assets for one year.
 
-Confirm profile rows and roles in **Supabase → Table Editor → profiles**. Confirm role protection at the database layer by attempting an update of your own `role` through the Supabase client; PostgreSQL should reject it.
+After authenticating the Firebase CLI locally, publish a new production build
+with:
+
+```bash
+npm run deploy:firebase
+```
+
+The deployed origin and `/auth/callback` URL must remain registered in the
+Google OAuth client and Supabase Auth URL configuration.
+
+### Test Google onboarding and both workspaces
+
+1. Visit `/login`, select **Continue with Google**, and authenticate with a test Google account.
+2. Confirm a new account is redirected to `/onboarding` and cannot open a marketplace dashboard before completing it.
+3. Enter a valid name and phone, choose Requestor, accept the three linked documents, and verify redirect to `/requestor/dashboard`.
+4. Open `/requestor/profile`, edit the name or phone, refresh, and confirm the Google-backed session persists.
+5. Switch to Runner and verify redirect to `/runner/dashboard`. Open `/requestor/dashboard` while Runner is active and confirm access is denied.
+6. Log out, select **Continue with Google** again, and confirm the completed account skips onboarding.
+7. Log out, then open either dashboard URL and confirm redirect to `/login`.
+
+Confirm `signup_method`, `onboarding_completed_at`, `terms_accepted_at`, `terms_version`, and both role fields in **Supabase → Table Editor → profiles**. Confirm role protection at the database layer by attempting to update your own `role` or onboarding timestamps directly through the Supabase client; PostgreSQL should reject it.
 
 ## Production build and Vercel
 
@@ -230,4 +283,4 @@ Confirm profile rows and roles in **Supabase → Table Editor → profiles**. Co
 
 ## Suggested next phase
 
-Add automated workflow and RLS tests plus service-coverage zones. Then implement private coordinates for saved-address templates, production-quality request search, pagination, and broader route-level code splitting. Keep platform payment integrations, chat, live location tracking, route optimization, and ratings as separate later milestones after the core request lifecycle is thoroughly tested.
+Add automated workflow, Storage-policy, handoff brute-force, settlement, dispute, Admin-RPC, and RLS tests, followed by a staffed support-contact process. Then add service-coverage zones, private coordinates for saved-address templates, production-quality request search, pagination, and broader route-level code splitting. Keep platform payment processing/escrow, chat, live location tracking, route optimization, ratings, destructive account deletion, and automated moderation as separate later milestones after the core request lifecycle is thoroughly tested.

@@ -9,9 +9,15 @@ import {
   cancelRequestBeforeStart,
   confirmRequestCompletion,
 } from "@/services/requestService";
-import { REQUEST_STATUSES } from "@/lib/requestConstants";
+import {
+  PAYMENT_ARRANGEMENTS,
+  REQUEST_STATUSES,
+} from "@/lib/requestConstants";
 import { devLog } from "@/lib/errors";
-import { getFriendlyRequestError } from "@/lib/requestUtils";
+import {
+  formatCurrency,
+  getFriendlyRequestError,
+} from "@/lib/requestUtils";
 import { FormField } from "@/components/common/FormField";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -27,11 +33,19 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
-export function RequestorRequestActions({ request, onChanged }) {
+export function RequestorRequestActions({
+  request,
+  onChanged,
+  receipts = [],
+  settlement = null,
+  disputes = [],
+}) {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [actionError, setActionError] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [receiptsReviewed, setReceiptsReviewed] = useState(false);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const {
     register,
     handleSubmit,
@@ -63,7 +77,11 @@ export function RequestorRequestActions({ request, onChanged }) {
   async function onConfirmCompletion() {
     setConfirming(true);
     setActionError("");
-    const { error } = await confirmRequestCompletion(request.id);
+    const { error } = await confirmRequestCompletion(
+      request.id,
+      receiptsReviewed,
+      paymentConfirmed,
+    );
     setConfirming(false);
     if (error) {
       devLog("Completion confirmation failed", error);
@@ -87,8 +105,21 @@ export function RequestorRequestActions({ request, onChanged }) {
 
   function changeConfirmDialog(open) {
     setConfirmOpen(open);
-    if (!open) setActionError("");
+    if (!open) {
+      setActionError("");
+      setReceiptsReviewed(false);
+      setPaymentConfirmed(false);
+    }
   }
+
+  const requiresReceiptReview = [
+    PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID,
+    PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE,
+  ].includes(request.payment_terms?.arrangement) &&
+    request.payment_terms?.receipt_evidence_required !== false;
+  const hasOpenDispute = disputes.some(
+    (dispute) => dispute.status === "OPEN",
+  );
 
   if (request.status === REQUEST_STATUSES.AWAITING_CONFIRMATION) {
     return (
@@ -97,7 +128,17 @@ export function RequestorRequestActions({ request, onChanged }) {
           The Runner submitted this task as completed. Confirm only after you
           have reviewed the result.
         </p>
-        <Button className="mt-5 w-full" onClick={() => setConfirmOpen(true)}>
+        {hasOpenDispute && (
+          <Alert className="mt-4 border-amber-200 bg-amber-50 text-amber-950">
+            Completion is paused until the open dispute is withdrawn or
+            resolved.
+          </Alert>
+        )}
+        <Button
+          className="mt-5 w-full"
+          disabled={hasOpenDispute}
+          onClick={() => setConfirmOpen(true)}
+        >
           <CheckCircle2 className="h-4 w-4" />
           Confirm Completion
         </Button>
@@ -107,11 +148,56 @@ export function RequestorRequestActions({ request, onChanged }) {
               <DialogTitle>Confirm task completion?</DialogTitle>
               <DialogDescription>
                 Confirm only after receiving the item or service, reviewing
-                applicable receipts, and settling the agreed amount directly
-                with the Runner in person. This permanently marks the request
-                as completed and notifies the Runner.
+                applicable receipts, and verifying that the selected payer
+                settled the agreed amount directly with the Runner. This
+                permanently marks the request as completed and notifies the
+                Runner.
               </DialogDescription>
             </DialogHeader>
+            {requiresReceiptReview && (
+              <>
+                <Alert className="border-sky-200 bg-sky-50 text-sky-950">
+                  The Runner uploaded {receipts.length} private receipt
+                  {receipts.length === 1 ? "" : "s"}. Open and compare the
+                  receipt total before confirming.
+                </Alert>
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 text-sm leading-6 text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={receiptsReviewed}
+                    onChange={(event) =>
+                      setReceiptsReviewed(event.target.checked)
+                    }
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+                  />
+                  <span>
+                    I reviewed the uploaded receipt evidence and its purchase
+                    amount.
+                  </span>
+                </label>
+              </>
+            )}
+            <Alert className="border-emerald-200 bg-emerald-50 text-emerald-950">
+              The Runner confirmed receiving{" "}
+              <strong>
+                {formatCurrency(settlement?.expected_amount)}
+              </strong>{" "}
+              directly from the selected payer.
+            </Alert>
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 text-sm leading-6 text-slate-700">
+              <input
+                type="checkbox"
+                checked={paymentConfirmed}
+                onChange={(event) =>
+                  setPaymentConfirmed(event.target.checked)
+                }
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+              />
+              <span>
+                I confirm that the selected payer settled the documented amount
+                directly with the Runner.
+              </span>
+            </label>
             <InPersonPaymentNotice compact />
             {actionError && <Alert variant="destructive">{actionError}</Alert>}
             <DialogFooter>
@@ -120,7 +206,14 @@ export function RequestorRequestActions({ request, onChanged }) {
                   Review again
                 </Button>
               </DialogClose>
-              <Button onClick={onConfirmCompletion} disabled={confirming}>
+              <Button
+                onClick={onConfirmCompletion}
+                disabled={
+                  confirming ||
+                  !paymentConfirmed ||
+                  (requiresReceiptReview && !receiptsReviewed)
+                }
+              >
                 {confirming && <LoaderCircle className="h-4 w-4 animate-spin" />}
                 {confirming ? "Confirming…" : "Confirm completion"}
               </Button>
@@ -140,6 +233,8 @@ export function RequestorRequestActions({ request, onChanged }) {
     const message =
       request.status === REQUEST_STATUSES.COMPLETED
         ? "This request has been completed."
+        : request.status === REQUEST_STATUSES.FAILED
+          ? "The Runner reported that the handoff failed. Review the failure and dispute records above."
         : "The assigned Runner is handling this request. Its details can no longer be edited or cancelled.";
     return <p className="mt-2 text-sm leading-6 text-slate-600">{message}</p>;
   }

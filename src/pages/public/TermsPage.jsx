@@ -29,7 +29,7 @@ export function TermsPage() {
       documentKey="terms"
       title="Terms of use"
       description="The current rules, responsibilities, and limitations for using the ButuanGo development milestone."
-      lastUpdated="July 18, 2026"
+      lastUpdated="July 31, 2026"
       readingTime="6 min"
       sections={TERMS_SECTIONS}
     >
@@ -56,16 +56,17 @@ export function TermsPage() {
         icon={UserRound}
       >
         <p>
-          Provide accurate account information, keep your password private, and
-          use only an account you are authorized to control. Profile information
-          and role labels are not identity verification.
+          Provide accurate onboarding information, protect access to your Google
+          account, and use only an account you are authorized to control.
+          Google sign-in, profile information, and role labels are not identity
+          verification.
         </p>
         <p>
-          Public registration starts an account as either Requestor or Runner.
-          An authenticated user may later switch the active workspace between
-          Requestor and Runner mode. The original registration role remains part
-          of the profile record, while the active mode determines which
-          workspace and role-protected actions are currently available.
+          A new Google-authenticated user must complete ButuanGo onboarding and
+          start as either Requestor or Runner. The user may later switch the
+          active workspace between Requestor and Runner mode. The initial
+          onboarding role remains part of the profile record, while the active
+          mode determines which protected actions are currently available.
         </p>
         <p>
           Switching modes does not create a new identity, remove obligations
@@ -98,15 +99,34 @@ export function TermsPage() {
         icon={HandCoins}
       >
         <p>
-          The Requestor and Runner settle the actual errand expense and agreed
-          service fee directly during meetup or delivery. ButuanGo does not
-          collect, hold, transfer, guarantee, refund, or process funds.
+          Each request identifies whether no purchase is needed, the merchant
+          is prepaid, or the Runner is asked to advance personal money. It also
+          identifies whether the Requestor or recipient will pay the Runner
+          directly during meetup or delivery. ButuanGo does not collect, hold,
+          transfer, guarantee, refund, or process funds.
         </p>
         <p>
           Displayed expense and fee amounts are estimates or user agreements,
           not platform charges or proof of payment. Participants are responsible
-          for checking items, official receipts, actual costs, and agreed
-          changes before handing over money.
+          for checking items, private receipt evidence, actual costs, and agreed
+          changes before handing over money. If a Runner requests a higher
+          cash-advance maximum after work starts, the Runner must wait for the
+          Requestor's approval and then consent to the revised limit before
+          buying above the original maximum.
+        </p>
+        <p>
+          A Runner cash advance is voluntary. The Runner must review and consent
+          to the displayed maximum before accepting or starting the task, and
+          again after an approved increase. Recording consent, a price decision,
+          or a receipt does not guarantee reimbursement.
+        </p>
+        <p>
+          The Requestor should reveal the private handoff code only during the
+          correct handoff. The Runner must verify it before confirming the
+          direct amount received, and the Requestor separately confirms
+          settlement when completing the request. Both users must record these
+          confirmations truthfully. A confirmation is a participant statement,
+          not independent proof or a platform payment guarantee.
         </p>
       </LegalSection>
 
@@ -144,6 +164,11 @@ export function TermsPage() {
           interfere with platform security, database policies, or normal
           operation.
         </p>
+        <p>
+          Do not guess or share another request's handoff code, falsely report a
+          failed delivery, submit a misleading dispute, fabricate evidence, or
+          confirm a handoff or payment that did not occur.
+        </p>
       </LegalSection>
 
       <LegalSection
@@ -159,9 +184,12 @@ export function TermsPage() {
         <p>
           This milestone does not provide online payment processing, escrow,
           refunds, identity verification, background checks, insurance,
-          guarantees, emergency monitoring, location tracking, or formal
-          dispute resolution. Availability may be interrupted while development
-          and testing continue.
+          guarantees, emergency monitoring, or location tracking. It records
+          participant disputes and provides protected Admin resolution
+          functions, but it does not yet provide a staffed support desk,
+          guaranteed investigation, appeal process, or legal adjudication.
+          Availability may be interrupted while development and testing
+          continue.
         </p>
       </LegalSection>
 

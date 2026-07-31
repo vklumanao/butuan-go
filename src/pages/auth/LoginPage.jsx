@@ -1,76 +1,67 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowLeft,
   ArrowLeftRight,
   CheckCircle2,
-  Eye,
-  EyeOff,
   LoaderCircle,
-  LockKeyhole,
-  Mail,
   MapPin,
   ShieldCheck,
 } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { loginSchema } from "@/validation/loginSchema";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { getProfile } from "@/services/profileService";
-import { getActiveRole, getDashboardPath } from "@/lib/constants";
-import { getFriendlyAuthError, devLog } from "@/lib/errors";
+import { devLog } from "@/lib/errors";
 import { isDemoMode, isSupabaseConfigured } from "@/lib/supabase";
 import { Brand } from "@/components/layout/Brand";
 import { ConfigurationNotice } from "@/components/common/ConfigurationNotice";
-import { FormField } from "@/components/common/FormField";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
+function GoogleIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      role="img"
+      aria-label="Google"
+    >
+      <path
+        fill="#4285F4"
+        d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.41Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 22c2.7 0 4.98-.9 6.63-2.36l-3.25-2.54c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.13H3.05v2.62A10 10 0 0 0 12 22Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M6.4 13.93A6.02 6.02 0 0 1 6.08 12c0-.67.12-1.32.32-1.93V7.45H3.05A10 10 0 0 0 2 12c0 1.61.39 3.14 1.05 4.55l3.35-2.62Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.94c1.47 0 2.79.5 3.83 1.5l2.87-2.88A9.65 9.65 0 0 0 12 2a10 10 0 0 0-8.95 5.45l3.35 2.62C7.19 7.7 9.4 5.94 12 5.94Z"
+      />
+    </svg>
+  );
+}
 
 export function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false);
+  const { signInWithGoogle } = useAuth();
+  const [signingIn, setSigningIn] = useState(false);
   const [formError, setFormError] = useState("");
-  const { signIn } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
-  });
+  const googleUnavailable = isDemoMode || !isSupabaseConfigured;
 
-  async function onSubmit(values) {
+  async function handleGoogleSignIn() {
     setFormError("");
-    const { data, error } = await signIn(values);
+    setSigningIn(true);
+    const { error } = await signInWithGoogle();
     if (error) {
-      devLog("Login failed", error);
-      setFormError(getFriendlyAuthError(error, "sign you in"));
-      return;
-    }
-
-    const { data: userProfile, error: profileError } = await getProfile(
-      data.user.id,
-    );
-    if (profileError || !userProfile) {
-      devLog("Profile missing after login", profileError);
+      devLog("Google sign-in failed", error);
       setFormError(
-        "You're signed in, but your profile could not be loaded. Please contact support.",
+        error.message ||
+          "We could not start Google sign-in. Check the authentication configuration and try again.",
       );
-      return;
+      setSigningIn(false);
     }
-
-    const requestedPath = location.state?.from?.pathname;
-    const activeRole = getActiveRole(userProfile);
-    const ownPrefix = `/${activeRole}/`;
-    navigate(
-      requestedPath?.startsWith(ownPrefix)
-        ? requestedPath
-        : getDashboardPath(activeRole),
-      { replace: true },
-    );
   }
 
   return (
@@ -84,11 +75,6 @@ export function LoginPage() {
           className="absolute -right-20 bottom-16 h-72 w-72 rounded-full bg-accent-400/20 blur-3xl"
           aria-hidden="true"
         />
-        <div
-          className="absolute right-12 top-12 h-40 w-40 rounded-full border border-white/10"
-          aria-hidden="true"
-        />
-
         <div className="relative z-10">
           <span className="inline-flex rounded-2xl bg-white px-4 py-3 shadow-xl shadow-slate-950/15">
             <Brand />
@@ -101,33 +87,33 @@ export function LoginPage() {
             Local help around Butuan
           </div>
           <h1 className="mt-6 text-4xl font-black leading-tight tracking-tight xl:text-5xl">
-            One account for getting help and helping others.
+            One Google account. Two local workspaces.
           </h1>
           <p className="mt-5 max-w-lg text-base leading-7 text-brand-100 xl:text-lg">
-            Post everyday errands or switch to Runner mode when you are ready to
-            complete local tasks.
+            Request help or complete local errands without creating another
+            password.
           </p>
 
-          <ul className="mt-8 grid gap-3" aria-label="ButuanGo benefits">
-            <li className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur-sm">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-400/20 text-brand-100">
+          <ul className="mt-8 grid gap-3">
+            <li className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.07] p-4">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-400/20 text-brand-100">
                 <CheckCircle2 className="h-5 w-5" />
               </span>
               <div>
-                <p className="font-bold">Manage local requests</p>
+                <p className="font-bold">New and returning users</p>
                 <p className="mt-0.5 text-sm text-brand-100/80">
-                  Keep request details and progress in one place.
+                  The same Google button creates or opens your account.
                 </p>
               </div>
             </li>
-            <li className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur-sm">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-400/20 text-accent-200">
+            <li className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.07] p-4">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-400/20 text-accent-200">
                 <ArrowLeftRight className="h-5 w-5" />
               </span>
               <div>
-                <p className="font-bold">Switch workspaces anytime</p>
+                <p className="font-bold">Requestor and Runner</p>
                 <p className="mt-0.5 text-sm text-brand-100/80">
-                  Use ButuanGo as a Requestor or Runner with one account.
+                  Choose where to start, then switch workspaces when needed.
                 </p>
               </div>
             </li>
@@ -136,15 +122,11 @@ export function LoginPage() {
           <div className="mt-6 flex items-start gap-3 rounded-2xl border border-accent-300/25 bg-accent-400/10 p-4">
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent-200" />
             <p className="text-sm leading-6 text-brand-50">
-              Review task details carefully and complete payments in person only
-              after meeting your task participant.
+              Google confirms access to the email account. It is not identity
+              verification or a ButuanGo safety guarantee.
             </p>
           </div>
         </div>
-
-        <p className="relative z-10 text-xs text-brand-200/70">
-          ButuanGo local task marketplace
-        </p>
       </section>
 
       <section className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10 sm:px-8 lg:px-12 xl:px-20">
@@ -153,7 +135,7 @@ export function LoginPage() {
             <Brand />
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-semibold text-slate-500 hover:bg-white hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-semibold text-slate-500 hover:bg-white hover:text-brand-700"
             >
               <ArrowLeft className="h-4 w-4" />
               Home
@@ -162,26 +144,25 @@ export function LoginPage() {
 
           <Link
             to="/"
-            className="mb-8 hidden w-fit items-center gap-2 rounded-lg text-sm font-semibold text-slate-500 transition-colors hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-4 lg:inline-flex"
+            className="mb-8 hidden w-fit items-center gap-2 rounded-lg text-sm font-semibold text-slate-500 transition-colors hover:text-brand-700 lg:inline-flex"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to home
           </Link>
 
-          <div>
-            <p className="text-sm font-bold uppercase tracking-[0.14em] text-brand-700">
-              Welcome back
-            </p>
-            <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-              Log in to Butuan<span className="text-brand-600">Go</span>
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Continue to your last active Requestor or Runner workspace.
-            </p>
-          </div>
+          <p className="text-sm font-bold uppercase tracking-[0.14em] text-brand-700">
+            Get started or continue
+          </p>
+          <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+            Continue to Butuan<span className="text-brand-600">Go</span>
+          </h2>
+          <p className="mt-3 leading-6 text-slate-600">
+            Use your Google account. New users complete a short profile setup
+            before entering the marketplace.
+          </p>
 
           <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/50 sm:p-7">
-            {(isDemoMode || !isSupabaseConfigured) && (
+            {googleUnavailable && (
               <div className="mb-5">
                 <ConfigurationNotice />
               </div>
@@ -191,114 +172,42 @@ export function LoginPage() {
                 {formError}
               </Alert>
             )}
-            {location.state?.passwordReset && (
-              <Alert className="mb-5 border-brand-200 bg-brand-50 text-brand-900">
-                Your password was updated. You can now log in with the new
-                password.
-              </Alert>
-            )}
 
-            <form
-              onSubmit={handleSubmit(onSubmit)}
-              className="space-y-5"
-              noValidate
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="w-full border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
+              disabled={googleUnavailable || signingIn}
+              onClick={handleGoogleSignIn}
             >
-              <FormField
-                id="email"
-                label="Email address"
-                error={errors.email?.message}
-              >
-                <div className="relative">
-                  <Mail
-                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                    aria-hidden="true"
-                  />
-                  <Input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    className="pl-10"
-                    placeholder="you@example.com"
-                    aria-invalid={Boolean(errors.email)}
-                    aria-describedby={errors.email ? "email-error" : undefined}
-                    {...register("email")}
-                  />
-                </div>
-              </FormField>
+              {signingIn ? (
+                <LoaderCircle className="h-5 w-5 animate-spin" />
+              ) : (
+                <GoogleIcon />
+              )}
+              {signingIn ? "Opening Google…" : "Continue with Google"}
+            </Button>
 
-              <FormField
-                id="password"
-                label="Password"
-                error={errors.password?.message}
-              >
-                <div className="relative">
-                  <LockKeyhole
-                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                    aria-hidden="true"
-                  />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    className="px-10"
-                    placeholder="Enter your password"
-                    aria-invalid={Boolean(errors.password)}
-                    aria-describedby={
-                      errors.password ? "password-error" : undefined
-                    }
-                    {...register("password")}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((value) => !value)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
-                    aria-pressed={showPassword}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-              </FormField>
-
-              <div className="flex justify-end">
-                <Link
-                  className="rounded text-sm font-semibold text-brand-700 hover:text-brand-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
-                  to="/forgot-password"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-
-              <Button
-                className="w-full"
-                size="lg"
-                type="submit"
-                disabled={
-                  isSubmitting || (!isDemoMode && !isSupabaseConfigured)
-                }
-              >
-                {isSubmitting && (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                )}
-                {isSubmitting ? "Signing in…" : "Log in"}
-              </Button>
-            </form>
+            <p className="mt-5 text-center text-xs leading-5 text-slate-500">
+              By continuing, you will be asked to accept the{" "}
+              <Link to="/terms" className="font-semibold text-brand-700">
+                Terms
+              </Link>
+              ,{" "}
+              <Link to="/privacy" className="font-semibold text-brand-700">
+                Privacy Notice
+              </Link>
+              , and{" "}
+              <Link to="/safety" className="font-semibold text-brand-700">
+                Safety guidance
+              </Link>{" "}
+              during first-time setup.
+            </p>
           </div>
 
-          <p className="mt-7 text-center text-sm text-slate-600">
-            New to ButuanGo?{" "}
-            <Link
-              className="rounded font-bold text-brand-700 hover:text-brand-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
-              to="/register"
-            >
-              Create an account
-            </Link>
+          <p className="mt-7 text-center text-sm leading-6 text-slate-500">
+            ButuanGo does not receive or store your Google password.
           </p>
         </div>
       </section>

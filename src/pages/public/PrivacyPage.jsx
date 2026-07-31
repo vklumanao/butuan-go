@@ -39,10 +39,12 @@ export function PrivacyPage() {
         icon={UserRound}
       >
         <p>
-          Registration uses your full name, email address, phone number,
-          password, and initial role selection. Your profile also stores your
-          current Requestor or Runner mode, account dates, and an optional
-          avatar reference.
+          Google provides the name, email address, and optional avatar associated
+          with the account you select. During ButuanGo onboarding, you provide a
+          phone number, choose an initial Requestor or Runner workspace, and
+          acknowledge the current Terms, Privacy Notice, and Safety guidance.
+          Your profile stores those account details, acceptance records, signup
+          method, current workspace, and account dates.
         </p>
         <p>
           When you use marketplace features, the platform stores request
@@ -64,7 +66,7 @@ export function PrivacyPage() {
           notifications.
         </p>
         <p>
-          The registration role is retained as account history. Switching the
+          The initial onboarding role is retained as account history. Switching the
           active mode changes the workspace and permissions currently in use;
           it does not create a second account or make private records public.
         </p>
@@ -111,9 +113,11 @@ export function PrivacyPage() {
         icon={Bell}
       >
         <p>
-          Supabase Authentication handles account credentials and session
-          management. Passwords are not stored in the public profiles table and
-          are not displayed to other users through the application.
+          Supabase Authentication handles the Google sign-in session. Google
+          manages the selected account credential and recovery methods;
+          ButuanGo does not receive or store your Google password. The Google
+          account confirms control of an email identity but is not identity
+          verification.
         </p>
         <p>
           In-app notifications store the recipient, related request, message,
@@ -128,15 +132,50 @@ export function PrivacyPage() {
         icon={HandCoins}
       >
         <p>
-          ButuanGo stores expense estimates and service-fee amounts entered for
-          an errand. It does not currently collect card numbers, bank
-          credentials, wallet access, payment account data, or confirmation of
-          the cash that changes hands.
+          ButuanGo stores expense estimates, service-fee amounts, the selected
+          payment arrangement and payer type, and any Runner cash-advance
+          consent amount and timestamp. If a recipient will pay or a merchant
+          order is prepaid, private payer contact or order-reference details may
+          also be stored for the participants.
         </p>
         <p>
-          Requestors and Runners settle directly in person. Amounts displayed in
-          the app are workflow records and estimates, not proof that payment was
-          made.
+          When an in-progress cash-advance price changes, ButuanGo stores the
+          old and proposed limits, the Runner's reason, the Requestor's decision
+          and optional response, and their timestamps. Purchase receipt files
+          and their file name, type, size, amount, note, and uploader are stored
+          privately. They are available only to the owning Requestor and
+          assigned Runner under the current database and Storage policies.
+        </p>
+        <p>
+          After work starts, ButuanGo stores a private handoff code and its
+          attempt and verification state. Only the owning Requestor can retrieve
+          the current code; the assigned Runner can submit a code for
+          verification but cannot retrieve it. The platform also stores the
+          calculated settlement amount and each participant's separate
+          confirmation and timestamp.
+        </p>
+        <p>
+          Failed-delivery reports, Requestor acknowledgements, disputes,
+          dispute outcomes, and temporary account restrictions may be retained
+          with their reasons, descriptions, involved accounts, and timestamps.
+          The participants can view the records relevant to their shared
+          request. Authorized Admin accounts can review a limited operations
+          directory containing account name, email, roles, onboarding state,
+          request participation counts, and active restriction state. They can
+          also review disputes, record outcomes or restrictions, and view the
+          resulting Admin audit events through protected backend functions.
+          The Admin request directory intentionally excludes exact private
+          pickup and delivery addresses.
+        </p>
+        <p>
+          ButuanGo does not collect card numbers, bank credentials, wallet
+          access, or payment account data. Participants settle directly in
+          person. The app records what each participant confirms, but it cannot
+          independently prove that cash changed hands; displayed amounts,
+          consent, approval, receipt, handoff, and settlement records are not a
+          payment guarantee. Avoid including unrelated personal, banking, or
+          account information in a receipt image, failure report, dispute, or
+          note.
         </p>
       </LegalSection>
 
@@ -153,15 +192,15 @@ export function PrivacyPage() {
         </p>
         {isDemoMode ? (
           <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
-            Demo mode is currently enabled. Demo accounts, including their demo
-            passwords, are stored only in this browser's local storage. Use
-            fictional information and clear the browser storage after testing.
+            Demo mode is currently enabled, so Google authentication is
+            unavailable. Legacy browser-only demo data may remain in local
+            storage; use fictional information and clear that storage after
+            testing.
           </p>
         ) : (
           <p>
-            Demo mode is not currently enabled. If a development build enables
-            it later, demo accounts and demo passwords will exist only in that
-            browser's local storage and must use fictional information.
+            Demo mode is not currently enabled. Google sign-in and sessions are
+            handled through the configured Supabase project.
           </p>
         )}
       </LegalSection>

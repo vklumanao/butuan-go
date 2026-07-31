@@ -2,22 +2,28 @@ import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   CalendarClock,
-  CircleDollarSign,
   ClipboardList,
   MapPin,
   RefreshCw,
-  WalletCards,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import {
   getRequestorRequestById,
   getRequestLocation,
+  getRequestPaymentDetails,
+  getRequestPriceChanges,
+  getRequestReceipts,
+  getRequestHandoffState,
+  getRequestSettlement,
+  getRequestFailure,
+  getRequestDisputes,
   getRequestParticipants,
   getRequestUpdates,
 } from "@/services/requestService";
 import { devLog } from "@/lib/errors";
-import { formatCurrency, formatDateTime } from "@/lib/requestUtils";
+import { formatDateTime } from "@/lib/requestUtils";
 import {
+  PAYMENT_ARRANGEMENTS,
   REQUEST_STATUSES,
   REQUEST_STATUS_LABELS,
 } from "@/lib/requestConstants";
@@ -26,6 +32,9 @@ import { RequestorRequestActions } from "@/components/requests/RequestorRequestA
 import { RequestLocationDetails } from "@/components/requests/RequestLocationDetails";
 import { RequestParticipantCard } from "@/components/requests/RequestParticipantCard";
 import { InPersonPaymentNotice } from "@/components/requests/InPersonPaymentNotice";
+import { PaymentTermsSummary } from "@/components/requests/RequestPaymentTerms";
+import { PaymentEvidencePanel } from "@/components/requests/PaymentEvidencePanel";
+import { HandoffSettlementPanel } from "@/components/requests/HandoffSettlementPanel";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,14 +63,44 @@ function eventLabel(update) {
 }
 
 async function getRequestorRequestDetails(requestId, userId) {
-  const [requestResult, updatesResult, locationResult, participantsResult] =
-    await Promise.all([
-      getRequestorRequestById(requestId, userId),
-      getRequestUpdates(requestId),
-      getRequestLocation(requestId),
-      getRequestParticipants(requestId),
-    ]);
-  return { requestResult, updatesResult, locationResult, participantsResult };
+  const [
+    requestResult,
+    updatesResult,
+    locationResult,
+    paymentDetailsResult,
+    priceChangesResult,
+    receiptsResult,
+    handoffResult,
+    settlementResult,
+    failureResult,
+    disputesResult,
+    participantsResult,
+  ] = await Promise.all([
+    getRequestorRequestById(requestId, userId),
+    getRequestUpdates(requestId),
+    getRequestLocation(requestId),
+    getRequestPaymentDetails(requestId),
+    getRequestPriceChanges(requestId),
+    getRequestReceipts(requestId),
+    getRequestHandoffState(requestId),
+    getRequestSettlement(requestId),
+    getRequestFailure(requestId),
+    getRequestDisputes(requestId),
+    getRequestParticipants(requestId),
+  ]);
+  return {
+    requestResult,
+    updatesResult,
+    locationResult,
+    paymentDetailsResult,
+    priceChangesResult,
+    receiptsResult,
+    handoffResult,
+    settlementResult,
+    failureResult,
+    disputesResult,
+    participantsResult,
+  };
 }
 
 export function RequestDetailsPage() {
@@ -70,6 +109,13 @@ export function RequestDetailsPage() {
   const [request, setRequest] = useState(null);
   const [updates, setUpdates] = useState([]);
   const [location, setLocation] = useState(null);
+  const [paymentDetails, setPaymentDetails] = useState(null);
+  const [priceChanges, setPriceChanges] = useState([]);
+  const [receipts, setReceipts] = useState([]);
+  const [handoff, setHandoff] = useState(null);
+  const [settlement, setSettlement] = useState(null);
+  const [failure, setFailure] = useState(null);
+  const [disputes, setDisputes] = useState([]);
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -78,6 +124,13 @@ export function RequestDetailsPage() {
     requestResult,
     updatesResult,
     locationResult,
+    paymentDetailsResult,
+    priceChangesResult,
+    receiptsResult,
+    handoffResult,
+    settlementResult,
+    failureResult,
+    disputesResult,
     participantsResult,
   }) {
     if (requestResult.error) {
@@ -99,6 +152,44 @@ export function RequestDetailsPage() {
       devLog("Private location retrieval failed", locationResult.error);
     } else {
       setLocation(locationResult.data || null);
+    }
+    if (paymentDetailsResult.error) {
+      devLog(
+        "Private payment detail retrieval failed",
+        paymentDetailsResult.error,
+      );
+    } else {
+      setPaymentDetails(paymentDetailsResult.data || null);
+    }
+    if (priceChangesResult.error) {
+      devLog("Price-change retrieval failed", priceChangesResult.error);
+    } else {
+      setPriceChanges(priceChangesResult.data || []);
+    }
+    if (receiptsResult.error) {
+      devLog("Receipt retrieval failed", receiptsResult.error);
+    } else {
+      setReceipts(receiptsResult.data || []);
+    }
+    if (handoffResult.error) {
+      devLog("Handoff retrieval failed", handoffResult.error);
+    } else {
+      setHandoff(handoffResult.data || null);
+    }
+    if (settlementResult.error) {
+      devLog("Settlement retrieval failed", settlementResult.error);
+    } else {
+      setSettlement(settlementResult.data || null);
+    }
+    if (failureResult.error) {
+      devLog("Failure retrieval failed", failureResult.error);
+    } else {
+      setFailure(failureResult.data || null);
+    }
+    if (disputesResult.error) {
+      devLog("Dispute retrieval failed", disputesResult.error);
+    } else {
+      setDisputes(disputesResult.data || []);
     }
     if (participantsResult.error) {
       devLog("Request participant retrieval failed", participantsResult.error);
@@ -160,6 +251,10 @@ export function RequestDetailsPage() {
   const locationEditPath = canEditLocation
     ? `/requestor/requests/${request.id}/location`
     : null;
+  const usesPurchaseEvidence = [
+    PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID,
+    PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE,
+  ].includes(request.payment_terms?.arrangement);
   const assignedRunner = participants.find(
     (participant) => participant.participant_type === "runner",
   );
@@ -227,6 +322,49 @@ export function RequestDetailsPage() {
             editTo={locationEditPath}
           />
 
+          {(usesPurchaseEvidence || priceChanges.length > 0) && (
+            <Card>
+              <CardHeader className="p-5 pb-3 sm:p-6 sm:pb-3">
+                <CardTitle>Price approval and receipts</CardTitle>
+              </CardHeader>
+              <CardContent className="p-5 pt-3 sm:p-6 sm:pt-3">
+                <PaymentEvidencePanel
+                  request={request}
+                  priceChanges={priceChanges}
+                  receipts={receipts}
+                  role="requestor"
+                  userId={user.id}
+                  onChanged={loadRequest}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {(handoff ||
+            settlement ||
+            failure ||
+            disputes.length > 0) && (
+            <Card>
+              <CardHeader className="p-5 pb-3 sm:p-6 sm:pb-3">
+                <CardTitle>Handoff, payment, and resolution</CardTitle>
+              </CardHeader>
+              <CardContent className="p-5 pt-3 sm:p-6 sm:pt-3">
+                <HandoffSettlementPanel
+                  request={request}
+                  handoff={handoff}
+                  settlement={settlement}
+                  failure={failure}
+                  disputes={disputes}
+                  receipts={receipts}
+                  priceChanges={priceChanges}
+                  role="requestor"
+                  userId={user.id}
+                  onChanged={loadRequest}
+                />
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader className="p-5 pb-3 sm:p-6 sm:pb-3">
               <CardTitle>Status history</CardTitle>
@@ -275,36 +413,15 @@ export function RequestDetailsPage() {
           />
           <Card>
             <CardHeader className="p-5 pb-3 sm:p-6 sm:pb-3">
-              <CardTitle>In-person payment arrangement</CardTitle>
+              <CardTitle>Payment arrangement</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 p-5 pt-3 sm:p-6 sm:pt-3">
-              <div className="flex flex-col items-start gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between min-[420px]:gap-4">
-                <span className="flex min-w-0 items-start gap-2 text-sm leading-5 text-slate-600">
-                  <WalletCards className="h-4 w-4" />
-                  Estimated errand expense
-                </span>
-                <strong className="shrink-0 tabular-nums">
-                  {formatCurrency(request.expense_budget)}
-                </strong>
-              </div>
-              <div className="flex flex-col items-start gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between min-[420px]:gap-4">
-                <span className="flex min-w-0 items-start gap-2 text-sm leading-5 text-slate-600">
-                  <CircleDollarSign className="h-4 w-4" />
-                  Agreed Runner fee
-                </span>
-                <strong className="shrink-0 tabular-nums">
-                  {formatCurrency(request.service_fee)}
-                </strong>
-              </div>
-              <div className="flex flex-col items-start gap-2 border-t border-slate-200 pt-4 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between min-[420px]:gap-4">
-                <span className="font-semibold">Estimated in-person total</span>
-                <strong className="shrink-0 text-lg tabular-nums text-brand-700">
-                  {formatCurrency(
-                    Number(request.expense_budget) +
-                      Number(request.service_fee),
-                  )}
-                </strong>
-              </div>
+              <PaymentTermsSummary
+                terms={request.payment_terms}
+                details={paymentDetails}
+                expenseBudget={request.expense_budget}
+                serviceFee={request.service_fee}
+              />
               <InPersonPaymentNotice compact />
             </CardContent>
           </Card>
@@ -315,6 +432,9 @@ export function RequestDetailsPage() {
               <RequestorRequestActions
                 request={request}
                 onChanged={loadRequest}
+                receipts={receipts}
+                settlement={settlement}
+                disputes={disputes}
               />
             </CardContent>
           </Card>

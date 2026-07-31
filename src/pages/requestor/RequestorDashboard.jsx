@@ -25,6 +25,8 @@ const actionDescriptions = {
   [REQUEST_STATUSES.ACCEPTED]:
     "A Runner accepted this request and is preparing to start.",
   [REQUEST_STATUSES.OPEN]: "Waiting for a local Runner to accept this request.",
+  [REQUEST_STATUSES.FAILED]:
+    "The Runner reported a failed handoff. Review the report or dispute history.",
 };
 
 function toNextAction(request) {

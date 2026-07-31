@@ -32,6 +32,10 @@ import {
   formatDistance,
 } from "@/lib/requestUtils";
 import { hasValidCoordinatePair } from "@/lib/geoUtils";
+import {
+  PAYMENT_ARRANGEMENTS,
+  PAYMENT_ARRANGEMENT_LABELS,
+} from "@/lib/requestConstants";
 import { RequestStatusBadge } from "@/components/requests/RequestStatusBadge";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -292,6 +296,7 @@ function ViewToggle({ value, onChange }) {
 }
 
 function RequestCardSummary({ request }) {
+  const paymentTerms = request.payment_terms;
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
@@ -301,6 +306,26 @@ function RequestCardSummary({ request }) {
         </span>
       </div>
       <h2 className="mt-3 text-xl font-bold">{request.title}</h2>
+      <div className="mt-3">
+        {paymentTerms ? (
+          <span
+            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
+              paymentTerms.arrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
+                ? "bg-amber-100 text-amber-900"
+                : "bg-brand-50 text-brand-800"
+            }`}
+          >
+            {PAYMENT_ARRANGEMENT_LABELS[paymentTerms.arrangement]}
+            {paymentTerms.arrangement ===
+              PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE &&
+              ` · Up to ${formatCurrency(paymentTerms.maximum_advance)}`}
+          </span>
+        ) : (
+          <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700">
+            Payment arrangement missing
+          </span>
+        )}
+      </div>
       <div className="mt-5 space-y-3 text-sm text-slate-600">
         <p className="flex items-center gap-2">
           <MapPin className="h-4 w-4 text-brand-600" />

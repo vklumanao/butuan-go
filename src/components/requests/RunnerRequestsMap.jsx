@@ -15,6 +15,10 @@ import {
   toFeatureCollection as createFeatureCollection,
 } from "@/lib/geoUtils";
 import { formatCurrency, formatDistance } from "@/lib/requestUtils";
+import {
+  PAYMENT_ARRANGEMENTS,
+  PAYMENT_ARRANGEMENT_LABELS,
+} from "@/lib/requestConstants";
 import { Alert } from "@/components/ui/alert";
 
 const DEFAULT_CENTER = [125.543, 8.9475];
@@ -53,6 +57,14 @@ function toFeatureCollection(requests) {
         area: request.area,
         category: request.category?.name || "Uncategorized",
         serviceFee: Number(request.service_fee) || 0,
+        paymentLabel: request.payment_terms
+          ? PAYMENT_ARRANGEMENT_LABELS[request.payment_terms.arrangement]
+          : "Payment arrangement missing",
+        maximumAdvance:
+          request.payment_terms?.arrangement ===
+          PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
+            ? Number(request.payment_terms.maximum_advance) || 0
+            : 0,
         distanceLabel:
           request.distanceKm === null ? "" : formatDistance(request.distanceKm),
       },
@@ -102,6 +114,13 @@ function createPopupContent(properties, navigate) {
   privacyNote.textContent =
     "The exact address is revealed only after you accept the request.";
   content.appendChild(privacyNote);
+
+  const payment = document.createElement("p");
+  payment.className = "butuango-map-popup__fee";
+  payment.textContent = Number(properties.maximumAdvance) > 0
+    ? `${properties.paymentLabel}: up to ${formatCurrency(properties.maximumAdvance)}`
+    : properties.paymentLabel;
+  content.appendChild(payment);
 
   if (properties.distanceLabel) {
     const distance = document.createElement("p");
