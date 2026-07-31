@@ -74,6 +74,29 @@ export async function clearAdminAccountRestriction(accountId) {
   return { data: normalizeRpcRow(data), error };
 }
 
+export async function setAdminAccountAccess({
+  accountId,
+  accessLevel,
+  reason,
+  durationDays = null,
+}) {
+  const { data, error } = await supabase.rpc("admin_set_account_access", {
+    p_account_id: accountId,
+    p_access_level: accessLevel,
+    p_reason: reason.trim(),
+    p_duration_days: durationDays,
+  });
+  return { data: normalizeRpcRow(data), error };
+}
+
+export async function restoreAdminAccountAccess(accountId) {
+  const { data, error } = await supabase.rpc(
+    "admin_restore_account_access",
+    { p_account_id: accountId },
+  );
+  return { data: normalizeRpcRow(data), error };
+}
+
 export async function listAdminAccountReports({
   status = "OPEN",
   limit = 50,

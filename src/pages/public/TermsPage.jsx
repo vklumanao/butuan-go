@@ -176,6 +176,15 @@ export function TermsPage() {
           personal information. Blocking prevents future matching but does not
           cancel existing responsibilities.
         </p>
+        <p>
+          An authorized Admin may restrict new marketplace activity, apply a
+          temporary read-only suspension, permanently ban an account, or
+          restore access after recording a reason. Suspension and permanent ban
+          preserve transaction history and access to relevant dispute and
+          safety-report records; they do not delete the Google or ButuanGo
+          account. These controls are administrative safety measures, not legal
+          findings.
+        </p>
       </LegalSection>
 
       <LegalSection

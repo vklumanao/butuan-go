@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { AccountAccessNotice } from "./AccountAccessNotice";
 
 const SIDEBAR_STORAGE_KEY = "butuango-desktop-sidebar-open";
 
@@ -332,6 +333,7 @@ export function AppShell() {
           desktopSidebarOpen ? "lg:ml-64" : "lg:ml-0"
         }`}
       >
+        {activeRole !== USER_ROLES.ADMIN && <AccountAccessNotice />}
         <Outlet />
       </main>
       <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>

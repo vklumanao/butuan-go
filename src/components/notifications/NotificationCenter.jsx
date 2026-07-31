@@ -116,6 +116,10 @@ const notificationVisuals = {
     icon: ShieldAlert,
     iconClass: "bg-red-100 text-red-700 ring-red-200",
   },
+  ACCOUNT_ACCESS_CHANGED: {
+    icon: ShieldAlert,
+    iconClass: "bg-red-100 text-red-700 ring-red-200",
+  },
   RATING_RECEIVED: {
     icon: Star,
     iconClass: "bg-amber-100 text-amber-700 ring-amber-200",
