@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { Search, ShieldBan, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -78,7 +78,10 @@ export function AdminUsersPage() {
 
       <Card className="mt-8">
         <CardContent className="p-4 sm:p-5">
-          <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:flex-row">
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-col gap-3 sm:flex-row"
+          >
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
@@ -95,73 +98,177 @@ export function AdminUsersPage() {
       </Card>
 
       <div className="mt-6">
-        {loading && <AdminLoadingState message="Loading account directory…" />}
-        {!loading && error && <AdminErrorState message={error} onRetry={loadAccounts} />}
+        {loading && <AdminLoadingState message="Loading account directory..." />}
+        {!loading && error && (
+          <AdminErrorState message={error} onRetry={loadAccounts} />
+        )}
         {!loading && !error && accounts.length === 0 && (
-          <AdminEmptyState title="No matching accounts" description="Try a different name, email, or exact account ID." />
+          <AdminEmptyState
+            title="No matching accounts"
+            description="Try a different name, email, or exact account ID."
+          />
         )}
         {!loading && !error && accounts.length > 0 && (
-          <div className="space-y-4">
-            <p className="text-sm font-semibold text-slate-500">Showing up to 50 newest matching accounts</p>
-            {accounts.map((account) => {
-              const restricted = Boolean(account.restricted_until);
-              return (
-                <Card key={account.id} className={restricted ? "border-red-200" : ""}>
-                  <CardContent className="p-5 sm:p-6">
-                    <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge>{ROLE_LABELS[account.active_role] || account.active_role}</Badge>
-                          {restricted ? (
-                            <Badge className="bg-red-100 text-red-800"><ShieldBan className="h-3.5 w-3.5" />Restricted</Badge>
-                          ) : (
-                            <Badge className="bg-emerald-100 text-emerald-800"><ShieldCheck className="h-3.5 w-3.5" />No active restriction</Badge>
-                          )}
-                        </div>
-                        <h2 className="mt-3 text-lg font-black text-slate-950">{account.full_name}</h2>
-                        <p className="mt-1 break-all text-sm text-slate-600">{account.email}</p>
-                        <p className="mt-2 break-all font-mono text-xs text-slate-400">{account.id}</p>
-                      </div>
-                      {restricted && (
-                        <Button
-                          variant="outline"
-                          onClick={() => clearRestriction(account)}
-                          disabled={clearingId === account.id}
+          <div>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-slate-500">
+                {accounts.length} account{accounts.length === 1 ? "" : "s"}
+                {submittedSearch ? " found" : " shown"}
+              </p>
+              <p className="text-xs text-slate-400">
+                Up to 50 newest matching accounts
+              </p>
+            </div>
+
+            <Card className="overflow-hidden">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[1040px] border-collapse text-left text-sm">
+                    <caption className="sr-only">
+                      ButuanGo account directory with roles, participation, and
+                      restriction controls
+                    </caption>
+                    <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                      <tr>
+                        <th scope="col" className="px-5 py-3.5 font-bold">
+                          Account
+                        </th>
+                        <th scope="col" className="px-4 py-3.5 font-bold">
+                          Workspace
+                        </th>
+                        <th scope="col" className="px-4 py-3.5 font-bold">
+                          Onboarding
+                        </th>
+                        <th scope="col" className="px-4 py-3.5 font-bold">
+                          Participation
+                        </th>
+                        <th scope="col" className="px-4 py-3.5 font-bold">
+                          Joined
+                        </th>
+                        <th scope="col" className="px-4 py-3.5 font-bold">
+                          Status
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-5 py-3.5 text-right font-bold"
                         >
-                          {clearingId === account.id ? "Clearing…" : "Clear restriction"}
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="mt-5 grid gap-3 border-t border-slate-200 pt-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
-                      <div>
-                        <p className="text-xs font-bold uppercase text-slate-500">Onboarding</p>
-                        <p className="mt-1 font-semibold text-slate-800">{account.onboarding_completed_at ? "Completed" : "Incomplete"}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold uppercase text-slate-500">Participation</p>
-                        <p className="mt-1 font-semibold text-slate-800">{account.request_count} requests · {account.runner_task_count} tasks</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold uppercase text-slate-500">Joined</p>
-                        <p className="mt-1 font-semibold text-slate-800">{formatDateTime(account.created_at, "")}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold uppercase text-slate-500">Sign-up method</p>
-                        <p className="mt-1 font-semibold capitalize text-slate-800">{account.signup_method}</p>
-                      </div>
-                    </div>
-
-                    {restricted && (
-                      <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
-                        <p className="font-bold">Restricted until {formatDateTime(account.restricted_until, "")}</p>
-                        <p className="mt-1 leading-6">{account.restriction_reason}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 bg-white">
+                      {accounts.map((account) => {
+                        const restricted = Boolean(account.restricted_until);
+                        return (
+                          <Fragment key={account.id}>
+                            <tr
+                              className={
+                                restricted
+                                  ? "bg-red-50/40 align-top"
+                                  : "align-top hover:bg-slate-50/70"
+                              }
+                            >
+                              <td className="max-w-80 px-5 py-4">
+                                <p className="font-bold text-slate-950">
+                                  {account.full_name}
+                                </p>
+                                <p
+                                  className="mt-1 truncate text-xs text-slate-600"
+                                  title={account.email}
+                                >
+                                  {account.email}
+                                </p>
+                                <p
+                                  className="mt-1 truncate font-mono text-[11px] text-slate-400"
+                                  title={account.id}
+                                >
+                                  {account.id}
+                                </p>
+                              </td>
+                              <td className="px-4 py-4">
+                                <Badge>
+                                  {ROLE_LABELS[account.active_role] ||
+                                    account.active_role}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-4">
+                                <p className="font-semibold text-slate-800">
+                                  {account.onboarding_completed_at
+                                    ? "Completed"
+                                    : "Incomplete"}
+                                </p>
+                                <p className="mt-1 text-xs capitalize text-slate-500">
+                                  {account.signup_method}
+                                </p>
+                              </td>
+                              <td className="px-4 py-4">
+                                <p className="font-semibold text-slate-800">
+                                  {account.request_count} requests
+                                </p>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  {account.runner_task_count} Runner tasks
+                                </p>
+                              </td>
+                              <td className="whitespace-nowrap px-4 py-4 font-semibold text-slate-700">
+                                {formatDateTime(account.created_at, "")}
+                              </td>
+                              <td className="px-4 py-4">
+                                {restricted ? (
+                                  <Badge className="bg-red-100 text-red-800">
+                                    <ShieldBan className="h-3.5 w-3.5" />
+                                    Restricted
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-emerald-100 text-emerald-800">
+                                    <ShieldCheck className="h-3.5 w-3.5" />
+                                    Active
+                                  </Badge>
+                                )}
+                              </td>
+                              <td className="px-5 py-4 text-right">
+                                {restricted ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => clearRestriction(account)}
+                                    disabled={clearingId === account.id}
+                                  >
+                                    {clearingId === account.id
+                                      ? "Clearing..."
+                                      : "Clear restriction"}
+                                  </Button>
+                                ) : (
+                                  <span className="text-xs text-slate-400">
+                                    No action needed
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                            {restricted && (
+                              <tr className="bg-red-50/70">
+                                <td colSpan={7} className="px-5 pb-4 pt-0">
+                                  <div className="rounded-lg border border-red-200 bg-white px-4 py-3 text-xs text-red-900">
+                                    <span className="font-bold">
+                                      Restricted until{" "}
+                                      {formatDateTime(
+                                        account.restricted_until,
+                                        "",
+                                      )}
+                                    </span>
+                                    <span className="mx-2 text-red-300">·</span>
+                                    <span>{account.restriction_reason}</span>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
