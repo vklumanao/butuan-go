@@ -1,5 +1,7 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import {
+  ChevronLeft,
+  ChevronRight,
   LoaderCircle,
   LockKeyhole,
   Search,
@@ -45,11 +47,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+const PAGE_SIZE = 10;
+
 function getAccountAccessLevel(account) {
   if (account.access_level) return account.access_level;
-  return account.restriction_reason
-    ? ACCOUNT_ACCESS_LEVELS.RESTRICTED
-    : null;
+  return account.restriction_reason ? ACCOUNT_ACCESS_LEVELS.RESTRICTED : null;
 }
 
 function getRemainingDays(value) {
@@ -108,6 +110,8 @@ export function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
   const [accounts, setAccounts] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -125,15 +129,19 @@ export function AdminUsersPage() {
     setError("");
     const { data, error: accountError } = await listAdminAccounts({
       search: submittedSearch,
+      limit: PAGE_SIZE + 1,
+      offset: (page - 1) * PAGE_SIZE,
     });
     if (accountError) {
       devLog("Admin account list failed", accountError);
       setError("We could not load the protected account directory.");
     } else {
-      setAccounts(data || []);
+      const rows = data || [];
+      setAccounts(rows.slice(0, PAGE_SIZE));
+      setHasNextPage(rows.length > PAGE_SIZE);
     }
     setLoading(false);
-  }, [submittedSearch]);
+  }, [page, submittedSearch]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(loadAccounts, 0);
@@ -142,6 +150,7 @@ export function AdminUsersPage() {
 
   function handleSearch(event) {
     event.preventDefault();
+    setPage(1);
     setSubmittedSearch(search.trim());
   }
 
@@ -193,8 +202,7 @@ export function AdminUsersPage() {
       accountId: selectedAccount.id,
       accessLevel,
       reason: trimmedReason,
-      durationDays:
-        accessLevel === ACCOUNT_ACCESS_LEVELS.BANNED ? null : days,
+      durationDays: accessLevel === ACCOUNT_ACCESS_LEVELS.BANNED ? null : days,
     });
     setSaving(false);
     if (saveError) {
@@ -206,7 +214,9 @@ export function AdminUsersPage() {
     }
 
     setSelectedAccount(null);
-    toast.success("The account control was recorded and the user was notified.");
+    toast.success(
+      "The account control was recorded and the user was notified.",
+    );
     loadAccounts();
   }
 
@@ -280,12 +290,11 @@ export function AdminUsersPage() {
           <div>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-semibold text-slate-500">
-                {accounts.length} account{accounts.length === 1 ? "" : "s"}
-                {submittedSearch ? " found" : " shown"}
+                Showing {(page - 1) * PAGE_SIZE + 1}-
+                {(page - 1) * PAGE_SIZE + accounts.length}
+                {submittedSearch ? ` for “${submittedSearch}”` : ""}
               </p>
-              <p className="text-xs text-slate-400">
-                Up to 50 newest matching accounts
-              </p>
+              <p className="text-xs text-slate-400">10 accounts per page</p>
             </div>
 
             <Card className="overflow-hidden">
@@ -412,7 +421,9 @@ export function AdminUsersPage() {
                                         ? " - no automatic expiration"
                                         : ` until ${formatDateTime(account.restricted_until, "")}`}
                                     </span>
-                                    <span className="mx-2 text-amber-300">·</span>
+                                    <span className="mx-2 text-amber-300">
+                                      ·
+                                    </span>
                                     <span>{account.restriction_reason}</span>
                                   </div>
                                 </td>
@@ -426,6 +437,33 @@ export function AdminUsersPage() {
                 </div>
               </CardContent>
             </Card>
+
+            <nav
+              className="mt-4 flex items-center justify-between gap-3"
+              aria-label="Account directory pagination"
+            >
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={page === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+              <p className="text-sm font-semibold text-slate-600">
+                Page {page}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPage((current) => current + 1)}
+                disabled={!hasNextPage}
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </nav>
           </div>
         )}
       </div>
@@ -449,8 +487,8 @@ export function AdminUsersPage() {
 
               <Alert className="border-amber-200 bg-amber-50 text-amber-950">
                 Restriction blocks new activity but permits existing
-                responsibilities. Suspension and permanent ban are read-only
-                and will be rejected while unfinished requests exist.
+                responsibilities. Suspension and permanent ban are read-only and
+                will be rejected while unfinished requests exist.
               </Alert>
 
               <div>
