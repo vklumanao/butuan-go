@@ -169,6 +169,13 @@ export function TermsPage() {
           failed delivery, submit a misleading dispute, fabricate evidence, or
           confirm a handoff or payment that did not occur.
         </p>
+        <p>
+          Ratings and safety reports must be based on a real shared request and
+          relevant facts. Do not use them for retaliation, harassment,
+          discrimination, fabricated allegations, or disclosure of unrelated
+          personal information. Blocking prevents future matching but does not
+          cancel existing responsibilities.
+        </p>
       </LegalSection>
 
       <LegalSection
@@ -185,9 +192,11 @@ export function TermsPage() {
           This milestone does not provide online payment processing, escrow,
           refunds, identity verification, background checks, insurance,
           guarantees, emergency monitoring, or location tracking. It records
-          participant disputes and provides protected Admin resolution
-          functions, but it does not yet provide a staffed support desk,
-          guaranteed investigation, appeal process, or legal adjudication.
+          participant disputes and safety reports and provides protected Admin
+          resolution functions, but a rating, activity count, report, or Admin
+          outcome is not identity verification or a guarantee of trust. The
+          service does not yet provide a staffed support desk, guaranteed
+          investigation, appeal process, or legal adjudication.
           Availability may be interrupted while development and testing
           continue.
         </p>

@@ -73,3 +73,32 @@ export async function clearAdminAccountRestriction(accountId) {
   );
   return { data: normalizeRpcRow(data), error };
 }
+
+export async function listAdminAccountReports({
+  status = "OPEN",
+  limit = 50,
+} = {}) {
+  return supabase.rpc("admin_list_account_reports", {
+    p_status: status,
+    p_limit: limit,
+    p_offset: 0,
+  });
+}
+
+export async function resolveAdminAccountReport({
+  reportId,
+  outcome,
+  resolutionNote,
+  restrictReportedDays = 0,
+}) {
+  const { data, error } = await supabase.rpc(
+    "admin_resolve_account_report",
+    {
+      p_report_id: reportId,
+      p_outcome: outcome,
+      p_resolution_note: resolutionNote.trim(),
+      p_restrict_reported_days: Number(restrictReportedDays) || 0,
+    },
+  );
+  return { data: normalizeRpcRow(data), error };
+}

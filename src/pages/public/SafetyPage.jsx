@@ -152,6 +152,13 @@ export function SafetyPage() {
           are contested. Do not include passwords, banking credentials, or
           unrelated private information in either record.
         </p>
+        <p>
+          Use the private safety-report control for harassment, impersonation,
+          spam, or unsafe participant behavior. Blocking prevents future
+          matching with that account but does not cancel the current request.
+          Ratings and activity summaries provide context only; they are not
+          proof of identity, safety, or fault.
+        </p>
       </LegalSection>
 
       <LegalSection
@@ -179,10 +186,10 @@ export function SafetyPage() {
           This milestone does not provide identity verification, background
           checks, insurance, guarantees, emergency monitoring, location
           tracking, or a staffed dispute-response team. The app can preserve a
-          dispute and an authorized Admin can record an outcome, but review is
-          not guaranteed and is not emergency or legal assistance. A profile,
-          role label, or task assignment is not proof that a participant has
-          been verified.
+          dispute or private safety report and an authorized Admin can record
+          an outcome, but review is not guaranteed and is not emergency or
+          legal assistance. A profile, role label, rating, activity summary, or
+          task assignment is not proof that a participant has been verified.
         </p>
       </LegalSection>
     </LegalPageLayout>
