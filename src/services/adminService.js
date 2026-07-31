@@ -9,11 +9,15 @@ export async function getAdminDashboardSummary() {
   return { data: normalizeRpcRow(data), error };
 }
 
-export async function listAdminAccounts({ search = "", limit = 50 } = {}) {
+export async function listAdminAccounts({
+  search = "",
+  limit = 50,
+  offset = 0,
+} = {}) {
   return supabase.rpc("admin_list_accounts", {
     p_search: search.trim() || null,
     p_limit: limit,
-    p_offset: 0,
+    p_offset: offset,
   });
 }
 
