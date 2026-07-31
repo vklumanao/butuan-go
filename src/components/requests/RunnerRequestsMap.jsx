@@ -127,6 +127,26 @@ function createPopupContent(properties, navigate) {
   return content;
 }
 
+function openRequestPopup(map, feature, lngLat, navigate, popupRef) {
+  popupRef.current?.remove();
+  const popup = new maplibregl.Popup({
+    offset: 14,
+    maxWidth: "300px",
+    className: "butuango-request-popup",
+  })
+    .setLngLat(lngLat)
+    .setDOMContent(createPopupContent(feature.properties, navigate))
+    .addTo(map);
+  popupRef.current = popup;
+  popup.on("close", () => {
+    if (popupRef.current === popup) popupRef.current = null;
+  });
+}
+
+function removeRequestPopup(popupRef) {
+  popupRef.current?.remove();
+}
+
 function addRequestLayers(map) {
   map.addSource(REQUEST_ZONE_SOURCE_ID, {
     type: "geojson",
@@ -201,11 +221,19 @@ function addRequestLayers(map) {
   });
 }
 
-export function RunnerRequestsMap({ requests, runnerLocation }) {
+export function RunnerRequestsMap({
+  requests,
+  runnerLocation,
+  selectedRequestId,
+  onSelectRequest,
+}) {
   const navigate = useNavigate();
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const runnerMarkerRef = useRef(null);
+  const popupRef = useRef(null);
+  const onSelectRequestRef = useRef(onSelectRequest);
+  const selectedRequestIdRef = useRef(selectedRequestId);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
@@ -219,6 +247,14 @@ export function RunnerRequestsMap({ requests, runnerLocation }) {
   );
   const mappableCount = featureCollection.features.length;
   const hiddenCount = requests.length - mappableCount;
+
+  useEffect(() => {
+    onSelectRequestRef.current = onSelectRequest;
+  }, [onSelectRequest]);
+
+  useEffect(() => {
+    selectedRequestIdRef.current = selectedRequestId;
+  }, [selectedRequestId]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return undefined;
@@ -246,6 +282,8 @@ export function RunnerRequestsMap({ requests, runnerLocation }) {
           layers: [CLUSTER_LAYER_ID],
         })[0];
         if (!feature) return;
+        popupRef.current?.remove();
+        onSelectRequestRef.current?.("");
         const source = map.getSource(REQUEST_SOURCE_ID);
         const zoom = await source.getClusterExpansionZoom(
           Number(feature.properties.cluster_id),
@@ -263,10 +301,12 @@ export function RunnerRequestsMap({ requests, runnerLocation }) {
         if (clusterAtPoint.length > 0) return;
         const feature = event.features?.[0];
         if (!feature) return;
-        new maplibregl.Popup({ offset: 14, maxWidth: "300px" })
-          .setLngLat(event.lngLat)
-          .setDOMContent(createPopupContent(feature.properties, navigate))
-          .addTo(map);
+        const requestId = String(feature.properties.id);
+        if (selectedRequestIdRef.current === requestId) {
+          openRequestPopup(map, feature, event.lngLat, navigate, popupRef);
+        } else {
+          onSelectRequestRef.current?.(requestId);
+        }
       });
 
       for (const layerId of [CLUSTER_LAYER_ID, REQUEST_ZONE_FILL_LAYER_ID]) {
@@ -288,6 +328,7 @@ export function RunnerRequestsMap({ requests, runnerLocation }) {
     });
 
     return () => {
+      removeRequestPopup(popupRef);
       runnerMarkerRef.current?.remove();
       map.remove();
       mapRef.current = null;
@@ -340,6 +381,63 @@ export function RunnerRequestsMap({ requests, runnerLocation }) {
       map.easeTo({ center: DEFAULT_CENTER, zoom: 12 });
     }
   }, [featureCollection, mapReady, runnerLocation, zoneFeatureCollection]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    const selectedId = selectedRequestId || "";
+    map.setPaintProperty(REQUEST_ZONE_FILL_LAYER_ID, "fill-color", [
+      "case",
+      ["==", ["get", "id"], selectedId],
+      "#e66f00",
+      "#009688",
+    ]);
+    map.setPaintProperty(REQUEST_ZONE_FILL_LAYER_ID, "fill-opacity", [
+      "case",
+      ["==", ["get", "id"], selectedId],
+      0.3,
+      0.14,
+    ]);
+    map.setPaintProperty(REQUEST_ZONE_OUTLINE_LAYER_ID, "line-color", [
+      "case",
+      ["==", ["get", "id"], selectedId],
+      "#c75b00",
+      "#007a70",
+    ]);
+    map.setPaintProperty(REQUEST_ZONE_OUTLINE_LAYER_ID, "line-width", [
+      "case",
+      ["==", ["get", "id"], selectedId],
+      4,
+      2,
+    ]);
+
+    if (!selectedId) {
+      popupRef.current?.remove();
+      return;
+    }
+
+    const selectedFeature = featureCollection.features.find(
+      (feature) => String(feature.properties.id) === selectedId,
+    );
+    if (!selectedFeature) {
+      popupRef.current?.remove();
+      return;
+    }
+
+    map.easeTo({
+      center: selectedFeature.geometry.coordinates,
+      zoom: Math.max(map.getZoom(), 13),
+      duration: 600,
+    });
+    openRequestPopup(
+      map,
+      selectedFeature,
+      selectedFeature.geometry.coordinates,
+      navigate,
+      popupRef,
+    );
+  }, [featureCollection, mapReady, navigate, selectedRequestId]);
 
   useEffect(() => {
     if (!isExpanded) {
