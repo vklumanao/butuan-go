@@ -17,9 +17,15 @@ const SAFETY_SECTIONS = [
   { id: "before-an-errand", title: "Before posting or accepting" },
   { id: "protect-information", title: "Protect personal information" },
   { id: "safe-meetups", title: "Plan a safer meetup" },
-  { id: "payment-and-receipts", title: "Handle payment and receipts carefully" },
+  {
+    id: "payment-and-receipts",
+    title: "Handle payment and receipts carefully",
+  },
   { id: "appropriate-tasks", title: "Keep tasks appropriate" },
-  { id: "changes-and-recovery", title: "Use cancellation and release responsibly" },
+  {
+    id: "changes-and-recovery",
+    title: "Use cancellation and release responsibly",
+  },
   { id: "unsafe-situations", title: "If something feels unsafe" },
   { id: "current-limitations", title: "Current safety limitations" },
 ];
@@ -65,11 +71,7 @@ export function SafetyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection
-        id="safe-meetups"
-        title="Plan a safer meetup"
-        icon={MapPin}
-      >
+      <LegalSection id="safe-meetups" title="Plan a safer meetup" icon={MapPin}>
         <p>
           Prefer a well-lit, familiar, and publicly accessible handoff point.
           Confirm the meeting place and expected arrival time before traveling,
@@ -118,9 +120,9 @@ export function SafetyPage() {
         icon={Ban}
       >
         <p>
-          Use the platform only for simple, lawful, everyday errands.
-          Government transactions and requests involving dangerous, regulated,
-          stolen, fraudulent, or prohibited items are outside the platform.
+          Use the platform only for simple, lawful, everyday errands. Government
+          transactions and requests involving dangerous, regulated, stolen,
+          fraudulent, or prohibited items are outside the platform.
         </p>
         <p>
           Do not use a request to harass, deceive, impersonate, monitor, or
@@ -194,10 +196,10 @@ export function SafetyPage() {
           This milestone does not provide identity verification, background
           checks, insurance, guarantees, emergency monitoring, location
           tracking, or a staffed dispute-response team. The app can preserve a
-          dispute or private safety report and an authorized Admin can record
-          an outcome, but review is not guaranteed and is not emergency or
-          legal assistance. A profile, role label, rating, activity summary, or
-          task assignment is not proof that a participant has been verified.
+          dispute or private safety report and an authorized Admin can record an
+          outcome, but review is not guaranteed and is not emergency or legal
+          assistance. A profile, role label, rating, activity summary, or task
+          assignment is not proof that a participant has been verified.
         </p>
       </LegalSection>
     </LegalPageLayout>

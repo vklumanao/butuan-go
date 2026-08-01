@@ -10,10 +10,7 @@ import {
 import { Link, useSearchParams } from "react-router-dom";
 import { getMyRequests } from "@/services/requestService";
 import { devLog } from "@/lib/errors";
-import {
-  PAYMENT_ARRANGEMENTS,
-  REQUEST_STATUSES,
-} from "@/lib/requestConstants";
+import { PAYMENT_ARRANGEMENTS, REQUEST_STATUSES } from "@/lib/requestConstants";
 import { formatCurrency, formatDateTime } from "@/lib/requestUtils";
 import { RequestStatusBadge } from "@/components/requests/RequestStatusBadge";
 import { Alert } from "@/components/ui/alert";
@@ -60,10 +57,7 @@ function matchesRequestFilter(request, filter) {
   }
 
   if (filter === "completed-this-month") {
-    if (
-      request.status !== REQUEST_STATUSES.COMPLETED ||
-      !request.completed_at
-    )
+    if (request.status !== REQUEST_STATUSES.COMPLETED || !request.completed_at)
       return false;
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -272,9 +266,7 @@ export function RequestorRequestsPage() {
                         Number(request.service_fee) +
                           (request.payment_terms?.arrangement ===
                           PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
-                            ? Number(
-                                request.payment_terms.maximum_advance,
-                              )
+                            ? Number(request.payment_terms.maximum_advance)
                             : 0),
                       )}
                     </p>

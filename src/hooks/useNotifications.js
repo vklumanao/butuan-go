@@ -60,7 +60,8 @@ export function useNotifications() {
   }, [user?.id]);
 
   const markRead = useCallback(async (notificationId) => {
-    const { data, error: updateError } = await markNotificationRead(notificationId);
+    const { data, error: updateError } =
+      await markNotificationRead(notificationId);
     if (updateError) {
       devLog("Notification update failed", updateError);
       toast.error("We could not mark that notification as read.");

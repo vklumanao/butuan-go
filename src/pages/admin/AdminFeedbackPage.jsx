@@ -143,7 +143,9 @@ export function AdminFeedbackPage() {
     const cleanNote = adminNote.trim();
     setReviewError("");
     if (cleanNote.length < 5) {
-      setReviewError("Enter an internal review note with at least 5 characters.");
+      setReviewError(
+        "Enter an internal review note with at least 5 characters.",
+      );
       return;
     }
 

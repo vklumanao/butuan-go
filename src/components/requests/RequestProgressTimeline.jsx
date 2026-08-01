@@ -183,7 +183,8 @@ export function RequestProgressTimeline({ request, role }) {
                 className={cn(
                   "relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 bg-white sm:mx-auto",
                   completed && "border-brand-600 bg-brand-600 text-white",
-                  active && "border-brand-600 text-brand-700 ring-4 ring-brand-100",
+                  active &&
+                    "border-brand-600 text-brand-700 ring-4 ring-brand-100",
                   !reached && "border-slate-200 text-slate-400",
                   isTerminalException &&
                     index === currentIndex &&

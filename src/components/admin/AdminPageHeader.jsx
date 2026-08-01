@@ -12,9 +12,7 @@ export function AdminPageHeader({ title, description, actions = null }) {
         <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
           {title}
         </h1>
-        <p className="mt-2 max-w-3xl leading-7 text-slate-600">
-          {description}
-        </p>
+        <p className="mt-2 max-w-3xl leading-7 text-slate-600">{description}</p>
       </div>
       {actions}
     </div>

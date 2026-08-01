@@ -169,9 +169,7 @@ export function RequestorDashboard() {
         items: [
           {
             label: "Purchase budgets",
-            value: summary
-              ? formatCurrency(summary.plannedExpenseBudget)
-              : "—",
+            value: summary ? formatCurrency(summary.plannedExpenseBudget) : "—",
             helper: "Estimated errand expenses",
           },
           {

@@ -6,10 +6,12 @@ export function getProfileAvatarUrl(profile, user = null) {
   ];
 
   return (
-    candidates.find(
-      (candidate) =>
-        typeof candidate === "string" && candidate.trim().length > 0,
-    )?.trim() || null
+    candidates
+      .find(
+        (candidate) =>
+          typeof candidate === "string" && candidate.trim().length > 0,
+      )
+      ?.trim() || null
   );
 }
 

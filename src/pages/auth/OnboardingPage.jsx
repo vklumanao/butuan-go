@@ -54,9 +54,7 @@ export function OnboardingPage() {
   });
 
   if (profile && hasCompletedOnboarding(profile)) {
-    return (
-      <Navigate to={getDashboardPath(getActiveRole(profile))} replace />
-    );
+    return <Navigate to={getDashboardPath(getActiveRole(profile))} replace />;
   }
 
   async function handleLogout() {

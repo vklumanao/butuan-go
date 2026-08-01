@@ -73,7 +73,10 @@ export function AdminRequestsPage() {
 
       <Card className="mt-8">
         <CardContent className="p-4 sm:p-5">
-          <form onSubmit={handleSearch} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto]">
+          <form
+            onSubmit={handleSearch}
+            className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto]"
+          >
             <div className="relative">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
@@ -92,7 +95,9 @@ export function AdminRequestsPage() {
             >
               {statuses.map((item) => (
                 <option key={item} value={item}>
-                  {item === "ALL" ? "All statuses" : REQUEST_STATUS_LABELS[item] || item}
+                  {item === "ALL"
+                    ? "All statuses"
+                    : REQUEST_STATUS_LABELS[item] || item}
                 </option>
               ))}
             </select>
@@ -103,13 +108,20 @@ export function AdminRequestsPage() {
 
       <div className="mt-6">
         {loading && <AdminLoadingState message="Loading request oversight…" />}
-        {!loading && error && <AdminErrorState message={error} onRetry={loadRequests} />}
+        {!loading && error && (
+          <AdminErrorState message={error} onRetry={loadRequests} />
+        )}
         {!loading && !error && requests.length === 0 && (
-          <AdminEmptyState title="No matching requests" description="Change the search or status filter to review other records." />
+          <AdminEmptyState
+            title="No matching requests"
+            description="Change the search or status filter to review other records."
+          />
         )}
         {!loading && !error && requests.length > 0 && (
           <div className="space-y-4">
-            <p className="text-sm font-semibold text-slate-500">Showing up to 50 newest matching requests</p>
+            <p className="text-sm font-semibold text-slate-500">
+              Showing up to 50 newest matching requests
+            </p>
             {requests.map((request) => (
               <Card key={request.id}>
                 <CardContent className="p-5 sm:p-6">
@@ -123,40 +135,77 @@ export function AdminRequestsPage() {
                             Open dispute
                           </Badge>
                         )}
-                        <span className="text-xs text-slate-500">{request.category_name}</span>
+                        <span className="text-xs text-slate-500">
+                          {request.category_name}
+                        </span>
                       </div>
-                      <h2 className="mt-3 break-words text-lg font-black text-slate-950">{request.title}</h2>
-                      <p className="mt-1 text-sm text-slate-600">{request.area}</p>
-                      <p className="mt-2 break-all font-mono text-xs text-slate-400">{request.id}</p>
+                      <h2 className="mt-3 break-words text-lg font-black text-slate-950">
+                        {request.title}
+                      </h2>
+                      <p className="mt-1 text-sm text-slate-600">
+                        {request.area}
+                      </p>
+                      <p className="mt-2 break-all font-mono text-xs text-slate-400">
+                        {request.id}
+                      </p>
                     </div>
                     <div className="grid shrink-0 gap-2 text-sm sm:grid-cols-2 lg:min-w-[360px]">
                       <div className="rounded-xl bg-slate-50 p-3">
-                        <p className="text-xs font-bold uppercase text-slate-500">Requestor</p>
-                        <p className="mt-1 font-semibold text-slate-900">{request.requestor_name}</p>
+                        <p className="text-xs font-bold uppercase text-slate-500">
+                          Requestor
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-900">
+                          {request.requestor_name}
+                        </p>
                       </div>
                       <div className="rounded-xl bg-slate-50 p-3">
-                        <p className="text-xs font-bold uppercase text-slate-500">Runner</p>
-                        <p className="mt-1 font-semibold text-slate-900">{request.runner_name || "Unassigned"}</p>
+                        <p className="text-xs font-bold uppercase text-slate-500">
+                          Runner
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-900">
+                          {request.runner_name || "Unassigned"}
+                        </p>
                       </div>
                     </div>
                   </div>
 
                   <div className="mt-5 grid gap-3 border-t border-slate-200 pt-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
                     <div>
-                      <p className="text-xs font-bold uppercase text-slate-500">Payment arrangement</p>
-                      <p className="mt-1 font-semibold text-slate-800">{PAYMENT_ARRANGEMENT_LABELS[request.payment_arrangement] || request.payment_arrangement || "Not recorded"}</p>
+                      <p className="text-xs font-bold uppercase text-slate-500">
+                        Payment arrangement
+                      </p>
+                      <p className="mt-1 font-semibold text-slate-800">
+                        {PAYMENT_ARRANGEMENT_LABELS[
+                          request.payment_arrangement
+                        ] ||
+                          request.payment_arrangement ||
+                          "Not recorded"}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold uppercase text-slate-500">Budget and fee</p>
-                      <p className="mt-1 font-semibold text-slate-800">{formatCurrency(request.expense_budget)} + {formatCurrency(request.service_fee)}</p>
+                      <p className="text-xs font-bold uppercase text-slate-500">
+                        Budget and fee
+                      </p>
+                      <p className="mt-1 font-semibold text-slate-800">
+                        {formatCurrency(request.expense_budget)} +{" "}
+                        {formatCurrency(request.service_fee)}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold uppercase text-slate-500">Created</p>
-                      <p className="mt-1 font-semibold text-slate-800">{formatDateTime(request.created_at, "")}</p>
+                      <p className="text-xs font-bold uppercase text-slate-500">
+                        Created
+                      </p>
+                      <p className="mt-1 font-semibold text-slate-800">
+                        {formatDateTime(request.created_at, "")}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold uppercase text-slate-500">Last updated</p>
-                      <p className="mt-1 font-semibold text-slate-800">{formatDateTime(request.updated_at, "")}</p>
+                      <p className="text-xs font-bold uppercase text-slate-500">
+                        Last updated
+                      </p>
+                      <p className="mt-1 font-semibold text-slate-800">
+                        {formatDateTime(request.updated_at, "")}
+                      </p>
                     </div>
                   </div>
                 </CardContent>

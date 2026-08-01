@@ -425,8 +425,7 @@ export function RunnerRequestDetailsPage() {
 
   const isOpen = request.status === REQUEST_STATUSES.OPEN;
   const requiresCashAdvance =
-    request.payment_terms?.arrangement ===
-    PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE;
+    request.payment_terms?.arrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE;
   const paymentTermsMissing = !request.payment_terms;
   const isAtCapacity = isOpen && Boolean(activeTask);
   const usesPurchaseEvidence = [
@@ -581,10 +580,7 @@ export function RunnerRequestDetailsPage() {
           )}
 
           {!isOpen &&
-            (handoff ||
-              settlement ||
-              failure ||
-              disputes.length > 0) && (
+            (handoff || settlement || failure || disputes.length > 0) && (
               <Card id="runner-handoff-settlement" className="scroll-mt-24">
                 <CardHeader>
                   <CardTitle>Handoff, payment, and resolution</CardTitle>
@@ -604,7 +600,7 @@ export function RunnerRequestDetailsPage() {
                   />
                 </CardContent>
               </Card>
-          )}
+            )}
 
           {!isOpen && (
             <Card>

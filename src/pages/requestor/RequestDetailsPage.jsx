@@ -343,10 +343,7 @@ export function RequestDetailsPage() {
             </Card>
           )}
 
-          {(handoff ||
-            settlement ||
-            failure ||
-            disputes.length > 0) && (
+          {(handoff || settlement || failure || disputes.length > 0) && (
             <Card>
               <CardHeader className="p-5 pb-3 sm:p-6 sm:pb-3">
                 <CardTitle>Handoff, payment, and resolution</CardTitle>

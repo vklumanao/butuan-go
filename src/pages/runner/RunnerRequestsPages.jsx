@@ -317,8 +317,7 @@ function RequestCardSummary({ request }) {
             }`}
           >
             {PAYMENT_ARRANGEMENT_LABELS[paymentTerms.arrangement]}
-            {paymentTerms.arrangement ===
-              PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE &&
+            {paymentTerms.arrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE &&
               ` · Up to ${formatCurrency(paymentTerms.maximum_advance)}`}
           </span>
         ) : (

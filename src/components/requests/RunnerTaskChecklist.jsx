@@ -22,9 +22,11 @@ const SUBMITTED_STATUSES = [
 function amountsMatch(first, second) {
   const firstAmount = Number(first);
   const secondAmount = Number(second);
-  return Number.isFinite(firstAmount) &&
+  return (
+    Number.isFinite(firstAmount) &&
     Number.isFinite(secondAmount) &&
-    firstAmount === secondAmount;
+    firstAmount === secondAmount
+  );
 }
 
 function buildChecklist({
@@ -43,7 +45,8 @@ function buildChecklist({
     [
       PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID,
       PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE,
-    ].includes(terms?.arrangement) && terms?.receipt_evidence_required !== false;
+    ].includes(terms?.arrangement) &&
+    terms?.receipt_evidence_required !== false;
   const cashAdvanceConfirmed =
     Boolean(terms?.runner_consented_at) &&
     amountsMatch(terms?.runner_consented_amount, terms?.maximum_advance);
@@ -119,7 +122,7 @@ function buildChecklist({
               ? `${receipts.length} private receipt${receipts.length === 1 ? "" : "s"} attached.`
               : completionSubmitted
                 ? "Required receipt evidence was validated before submission."
-              : "Upload purchase evidence for the Requestor to review.",
+                : "Upload purchase evidence for the Requestor to review.",
           complete: receiptReady,
           target: "#runner-payment-evidence",
         }
@@ -131,7 +134,7 @@ function buildChecklist({
         ? "The six-digit handoff code was verified."
         : completionSubmitted
           ? "Handoff verification was validated before submission."
-        : "Ask the Requestor or recipient for the handoff code at delivery.",
+          : "Ask the Requestor or recipient for the handoff code at delivery.",
       complete: handoffReady,
       target: "#runner-handoff-settlement",
     },
@@ -223,7 +226,10 @@ export function RunnerTaskChecklist({
             check anything manually.
           </p>
         </div>
-        <p className="shrink-0 text-sm font-bold text-slate-700" aria-live="polite">
+        <p
+          className="shrink-0 text-sm font-bold text-slate-700"
+          aria-live="polite"
+        >
           {completedCount} of {steps.length} complete
         </p>
       </div>
@@ -277,7 +283,8 @@ export function RunnerTaskChecklist({
                   (step.blocked
                     ? "border-amber-300 bg-amber-50"
                     : "border-brand-300 bg-brand-50"),
-                !step.complete && !isCurrent &&
+                !step.complete &&
+                  !isCurrent &&
                   "border-slate-200 bg-slate-50/70",
               )}
             >
@@ -289,7 +296,8 @@ export function RunnerTaskChecklist({
                     (step.blocked
                       ? "border-amber-300 text-amber-700"
                       : "border-brand-300 text-brand-700"),
-                  !step.complete && !isCurrent &&
+                  !step.complete &&
+                    !isCurrent &&
                     "border-slate-200 text-slate-400",
                 )}
               >

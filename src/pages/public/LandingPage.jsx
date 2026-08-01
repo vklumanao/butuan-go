@@ -288,9 +288,8 @@ export function LandingPage() {
     if (event.key === "ArrowRight" || event.key === "ArrowDown") {
       nextRole = roleOrder[(currentIndex + 1) % roleOrder.length];
     } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-      nextRole = roleOrder[
-        (currentIndex - 1 + roleOrder.length) % roleOrder.length
-      ];
+      nextRole =
+        roleOrder[(currentIndex - 1 + roleOrder.length) % roleOrder.length];
     } else if (event.key === "Home") {
       nextRole = roleOrder[0];
     } else if (event.key === "End") {

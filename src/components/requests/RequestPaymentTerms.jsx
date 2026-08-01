@@ -189,8 +189,7 @@ export function PaymentTermsSummary({
 
   const arrangementLabel =
     PAYMENT_ARRANGEMENT_LABELS[terms.arrangement] || terms.arrangement;
-  const payerLabel =
-    PAYMENT_PAYER_LABELS[terms.payer_type] || terms.payer_type;
+  const payerLabel = PAYMENT_PAYER_LABELS[terms.payer_type] || terms.payer_type;
   const arrangementDescription =
     PAYMENT_ARRANGEMENT_DESCRIPTIONS[terms.arrangement] ||
     "Review the agreed payment terms before continuing.";
@@ -282,9 +281,7 @@ export function PaymentTermsSummary({
               <UserRound className="mt-0.5 h-4 w-4 shrink-0 text-brand-700" />
               <span>
                 Payer:{" "}
-                <strong className="text-slate-900">
-                  {details.payer_name}
-                </strong>
+                <strong className="text-slate-900">{details.payer_name}</strong>
                 {details.payer_phone ? ` · ${details.payer_phone}` : ""}
               </span>
             </p>

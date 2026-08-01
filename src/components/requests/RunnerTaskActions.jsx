@@ -23,10 +23,7 @@ import {
   REQUEST_STATUSES,
 } from "@/lib/requestConstants";
 import { devLog } from "@/lib/errors";
-import {
-  formatCurrency,
-  getFriendlyRequestError,
-} from "@/lib/requestUtils";
+import { formatCurrency, getFriendlyRequestError } from "@/lib/requestUtils";
 import { FormField } from "@/components/common/FormField";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -141,8 +138,14 @@ function ReleaseTaskAction({ request }) {
                   Keep task
                 </Button>
               </DialogClose>
-              <Button type="submit" variant="destructive" disabled={isSubmitting}>
-                {isSubmitting && <LoaderCircle className="h-4 w-4 animate-spin" />}
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={isSubmitting}
+              >
+                {isSubmitting && (
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                )}
                 {isSubmitting ? "Releasing…" : "Release task"}
               </Button>
             </DialogFooter>
@@ -193,15 +196,12 @@ export function RunnerTaskActions({
     request.payment_terms?.receipt_evidence_required !== false &&
     receipts.length === 0;
   const handoffNotVerified =
-    request.status === REQUEST_STATUSES.IN_PROGRESS &&
-    !handoff?.verified_at;
+    request.status === REQUEST_STATUSES.IN_PROGRESS && !handoff?.verified_at;
   const paymentNotConfirmed =
     request.status === REQUEST_STATUSES.IN_PROGRESS &&
     (!settlement?.runner_confirmed_at ||
       settlement.runner_received_amount !== settlement.expected_amount);
-  const hasOpenDispute = disputes.some(
-    (dispute) => dispute.status === "OPEN",
-  );
+  const hasOpenDispute = disputes.some((dispute) => dispute.status === "OPEN");
   const cannotStart =
     request.status === REQUEST_STATUSES.ACCEPTED &&
     (!hasLocation || needsCashAdvanceConsent);
@@ -252,8 +252,8 @@ export function RunnerTaskActions({
   if (request.status === REQUEST_STATUSES.AWAITING_CONFIRMATION) {
     return (
       <p className="mt-2 text-sm leading-6 text-slate-600">
-        Completion has been submitted. The Requestor must confirm it before
-        this task is marked completed.
+        Completion has been submitted. The Requestor must confirm it before this
+        task is marked completed.
       </p>
     );
   }
@@ -304,9 +304,9 @@ export function RunnerTaskActions({
                     : paymentNotConfirmed
                       ? "Confirm that you received the documented direct payment before submitting."
                       : "An open dispute must be withdrawn or resolved before submitting."
-          : request.status === REQUEST_STATUSES.ACCEPTED
-            ? "Start the task when you are ready to begin the errand."
-            : "Submit the task when the requested errand has been completed."}
+            : request.status === REQUEST_STATUSES.ACCEPTED
+              ? "Start the task when you are ready to begin the errand."
+              : "Submit the task when the requested errand has been completed."}
       </p>
       {needsCashAdvanceConsent && (
         <Button
@@ -409,10 +409,7 @@ export function RunnerTaskActions({
                 Not yet
               </Button>
             </DialogClose>
-            <Button
-              onClick={confirmCashAdvance}
-              disabled={confirmingAdvance}
-            >
+            <Button onClick={confirmCashAdvance} disabled={confirmingAdvance}>
               {confirmingAdvance && (
                 <LoaderCircle className="h-4 w-4 animate-spin" />
               )}
