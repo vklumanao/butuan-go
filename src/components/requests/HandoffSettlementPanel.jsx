@@ -58,8 +58,7 @@ const DISPUTE_ELIGIBLE_STATUSES = [
 ];
 
 function disputeStatusClass(status) {
-  if (status === "OPEN")
-    return "border-amber-200 bg-amber-50 text-amber-900";
+  if (status === "OPEN") return "border-amber-200 bg-amber-50 text-amber-900";
   if (status === "RESOLVED")
     return "border-emerald-200 bg-emerald-50 text-emerald-800";
   if (status === "DISMISSED")
@@ -99,14 +98,11 @@ export function HandoffSettlementPanel({
   const openDispute = disputes.find((dispute) => dispute.status === "OPEN");
   const handoffVerified = Boolean(handoff?.verified_at);
   const runnerPaymentConfirmed = Boolean(settlement?.runner_confirmed_at);
-  const requestorPaymentConfirmed = Boolean(
-    settlement?.requestor_confirmed_at,
-  );
+  const requestorPaymentConfirmed = Boolean(settlement?.requestor_confirmed_at);
   const canOpenDispute =
     DISPUTE_ELIGIBLE_STATUSES.includes(request.status) && !openDispute;
   const payerLabel =
-    PAYMENT_PAYER_LABELS[request.payment_terms?.payer_type] ||
-    "Selected payer";
+    PAYMENT_PAYER_LABELS[request.payment_terms?.payer_type] || "Selected payer";
   const purchaseReceiptRequired =
     request.payment_terms?.receipt_evidence_required !== false &&
     ["MERCHANT_PREPAID", "RUNNER_ADVANCE"].includes(
@@ -174,10 +170,7 @@ export function HandoffSettlementPanel({
     }
 
     setBusyAction("verify");
-    const { data, error } = await verifyRequestHandoff(
-      request.id,
-      handoffCode,
-    );
+    const { data, error } = await verifyRequestHandoff(request.id, handoffCode);
     setBusyAction("");
     if (error) {
       showError(error, "verify the handoff code");
@@ -299,7 +292,9 @@ export function HandoffSettlementPanel({
   }
 
   async function withdrawDispute(dispute) {
-    if (!window.confirm("Withdraw this dispute and resume the normal workflow?"))
+    if (
+      !window.confirm("Withdraw this dispute and resume the normal workflow?")
+    )
       return;
     setBusyAction(`withdraw-${dispute.id}`);
     setPanelError("");
@@ -321,9 +316,7 @@ export function HandoffSettlementPanel({
               <KeyRound className="h-5 w-5" />
             </span>
             <div>
-              <h3 className="font-bold text-slate-950">
-                Secure handoff code
-              </h3>
+              <h3 className="font-bold text-slate-950">Secure handoff code</h3>
               <p className="mt-1 text-sm leading-6 text-slate-600">
                 Confirms that the Runner reached the intended handoff.
               </p>
@@ -394,8 +387,7 @@ export function HandoffSettlementPanel({
                   placeholder="000000"
                   className="text-center text-lg font-bold tracking-[0.2em]"
                   disabled={
-                    handoff.attempts_remaining === 0 ||
-                    busyAction === "verify"
+                    handoff.attempts_remaining === 0 || busyAction === "verify"
                   }
                   onChange={(event) =>
                     setHandoffCode(
@@ -406,8 +398,7 @@ export function HandoffSettlementPanel({
                 <Button
                   type="submit"
                   disabled={
-                    handoff.attempts_remaining === 0 ||
-                    busyAction === "verify"
+                    handoff.attempts_remaining === 0 || busyAction === "verify"
                   }
                 >
                   {busyAction === "verify" && (
@@ -673,27 +664,29 @@ export function HandoffSettlementPanel({
               documented amount.
             </DialogDescription>
           </DialogHeader>
-          <Alert className="border-emerald-200 bg-emerald-50 text-emerald-950">
-            <p className="text-sm">Documented direct payment</p>
-            <p className="mt-1 text-2xl font-black">
-              {formatCurrency(settlement?.expected_amount)}
-            </p>
-          </Alert>
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 text-sm leading-6 text-slate-700">
-            <input
-              type="checkbox"
-              checked={paymentAcknowledged}
-              onChange={(event) =>
-                setPaymentAcknowledged(event.target.checked)
-              }
-              className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
-            />
-            <span>
-              I personally received the complete amount shown above directly
-              from the selected payer.
-            </span>
-          </label>
-          {panelError && <Alert variant="destructive">{panelError}</Alert>}
+          <div className="space-y-4">
+            <Alert className="border-emerald-200 bg-emerald-50 text-emerald-950">
+              <p className="text-sm">Documented direct payment</p>
+              <p className="mt-1 text-2xl font-black">
+                {formatCurrency(settlement?.expected_amount)}
+              </p>
+            </Alert>
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 text-sm leading-6 text-slate-700">
+              <input
+                type="checkbox"
+                checked={paymentAcknowledged}
+                onChange={(event) =>
+                  setPaymentAcknowledged(event.target.checked)
+                }
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+              />
+              <span>
+                I personally received the complete amount shown above directly
+                from the selected payer.
+              </span>
+            </label>
+            {panelError && <Alert variant="destructive">{panelError}</Alert>}
+          </div>
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline" disabled={busyAction === "payment"}>
@@ -701,9 +694,7 @@ export function HandoffSettlementPanel({
               </Button>
             </DialogClose>
             <Button
-              disabled={
-                !paymentAcknowledged || busyAction === "payment"
-              }
+              disabled={!paymentAcknowledged || busyAction === "payment"}
               onClick={confirmPayment}
             >
               {busyAction === "payment" && (
@@ -819,7 +810,8 @@ export function HandoffSettlementPanel({
               htmlFor="acknowledgmentNote"
               className="text-sm font-semibold text-slate-900"
             >
-              Note <span className="font-normal text-slate-500">(optional)</span>
+              Note{" "}
+              <span className="font-normal text-slate-500">(optional)</span>
             </label>
             <Textarea
               id="acknowledgmentNote"
@@ -899,9 +891,7 @@ export function HandoffSettlementPanel({
                 maxLength={1500}
                 value={disputeDescription}
                 placeholder="Explain what happened and what records support your report."
-                onChange={(event) =>
-                  setDisputeDescription(event.target.value)
-                }
+                onChange={(event) => setDisputeDescription(event.target.value)}
               />
             </div>
             {panelError && <Alert variant="destructive">{panelError}</Alert>}
@@ -911,10 +901,7 @@ export function HandoffSettlementPanel({
                   Cancel
                 </Button>
               </DialogClose>
-              <Button
-                type="submit"
-                disabled={busyAction === "dispute"}
-              >
+              <Button type="submit" disabled={busyAction === "dispute"}>
                 {busyAction === "dispute" && (
                   <LoaderCircle className="h-4 w-4 animate-spin" />
                 )}

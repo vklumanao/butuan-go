@@ -9,15 +9,9 @@ import {
   cancelRequestBeforeStart,
   confirmRequestCompletion,
 } from "@/services/requestService";
-import {
-  PAYMENT_ARRANGEMENTS,
-  REQUEST_STATUSES,
-} from "@/lib/requestConstants";
+import { PAYMENT_ARRANGEMENTS, REQUEST_STATUSES } from "@/lib/requestConstants";
 import { devLog } from "@/lib/errors";
-import {
-  formatCurrency,
-  getFriendlyRequestError,
-} from "@/lib/requestUtils";
+import { formatCurrency, getFriendlyRequestError } from "@/lib/requestUtils";
 import { FormField } from "@/components/common/FormField";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -112,14 +106,13 @@ export function RequestorRequestActions({
     }
   }
 
-  const requiresReceiptReview = [
-    PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID,
-    PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE,
-  ].includes(request.payment_terms?.arrangement) &&
+  const requiresReceiptReview =
+    [
+      PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID,
+      PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE,
+    ].includes(request.payment_terms?.arrangement) &&
     request.payment_terms?.receipt_evidence_required !== false;
-  const hasOpenDispute = disputes.some(
-    (dispute) => dispute.status === "OPEN",
-  );
+  const hasOpenDispute = disputes.some((dispute) => dispute.status === "OPEN");
 
   if (request.status === REQUEST_STATUSES.AWAITING_CONFIRMATION) {
     return (
@@ -142,6 +135,7 @@ export function RequestorRequestActions({
           <CheckCircle2 className="h-4 w-4" />
           Confirm Completion
         </Button>
+
         <Dialog open={confirmOpen} onOpenChange={changeConfirmDialog}>
           <DialogContent>
             <DialogHeader>
@@ -154,52 +148,54 @@ export function RequestorRequestActions({
                 Runner.
               </DialogDescription>
             </DialogHeader>
-            {requiresReceiptReview && (
-              <>
-                <Alert className="border-sky-200 bg-sky-50 text-sky-950">
-                  The Runner uploaded {receipts.length} private receipt
-                  {receipts.length === 1 ? "" : "s"}. Open and compare the
-                  receipt total before confirming.
-                </Alert>
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 text-sm leading-6 text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={receiptsReviewed}
-                    onChange={(event) =>
-                      setReceiptsReviewed(event.target.checked)
-                    }
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
-                  />
-                  <span>
-                    I reviewed the uploaded receipt evidence and its purchase
-                    amount.
-                  </span>
-                </label>
-              </>
-            )}
-            <Alert className="border-emerald-200 bg-emerald-50 text-emerald-950">
-              The Runner confirmed receiving{" "}
-              <strong>
-                {formatCurrency(settlement?.expected_amount)}
-              </strong>{" "}
-              directly from the selected payer.
-            </Alert>
-            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 text-sm leading-6 text-slate-700">
-              <input
-                type="checkbox"
-                checked={paymentConfirmed}
-                onChange={(event) =>
-                  setPaymentConfirmed(event.target.checked)
-                }
-                className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
-              />
-              <span>
-                I confirm that the selected payer settled the documented amount
-                directly with the Runner.
-              </span>
-            </label>
-            <InPersonPaymentNotice compact />
-            {actionError && <Alert variant="destructive">{actionError}</Alert>}
+            <div className="space-y-4">
+              {requiresReceiptReview && (
+                <>
+                  <Alert className="border-sky-200 bg-sky-50 text-sky-950">
+                    The Runner uploaded {receipts.length} private receipt
+                    {receipts.length === 1 ? "" : "s"}. Open and compare the
+                    receipt total before confirming.
+                  </Alert>
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 text-sm leading-6 text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={receiptsReviewed}
+                      onChange={(event) =>
+                        setReceiptsReviewed(event.target.checked)
+                      }
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+                    />
+                    <span>
+                      I reviewed the uploaded receipt evidence and its purchase
+                      amount.
+                    </span>
+                  </label>
+                </>
+              )}
+              <Alert className="border-emerald-200 bg-emerald-50 text-emerald-950">
+                The Runner confirmed receiving{" "}
+                <strong>{formatCurrency(settlement?.expected_amount)}</strong>{" "}
+                directly from the selected payer.
+              </Alert>
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 text-sm leading-6 text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={paymentConfirmed}
+                  onChange={(event) =>
+                    setPaymentConfirmed(event.target.checked)
+                  }
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+                />
+                <span>
+                  I confirm that the selected payer settled the documented
+                  amount directly with the Runner.
+                </span>
+              </label>
+              <InPersonPaymentNotice compact />
+              {actionError && (
+                <Alert variant="destructive">{actionError}</Alert>
+              )}
+            </div>
             <DialogFooter>
               <DialogClose asChild>
                 <Button variant="outline" disabled={confirming}>
@@ -214,7 +210,9 @@ export function RequestorRequestActions({
                   (requiresReceiptReview && !receiptsReviewed)
                 }
               >
-                {confirming && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                {confirming && (
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                )}
                 {confirming ? "Confirming…" : "Confirm completion"}
               </Button>
             </DialogFooter>
@@ -235,7 +233,7 @@ export function RequestorRequestActions({
         ? "This request has been completed."
         : request.status === REQUEST_STATUSES.FAILED
           ? "The Runner reported that the handoff failed. Review the failure and dispute records above."
-        : "The assigned Runner is handling this request. Its details can no longer be edited or cancelled.";
+          : "The assigned Runner is handling this request. Its details can no longer be edited or cancelled.";
     return <p className="mt-2 text-sm leading-6 text-slate-600">{message}</p>;
   }
 
@@ -296,8 +294,14 @@ export function RequestorRequestActions({
                   Keep request
                 </Button>
               </DialogClose>
-              <Button type="submit" variant="destructive" disabled={isSubmitting}>
-                {isSubmitting && <LoaderCircle className="h-4 w-4 animate-spin" />}
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={isSubmitting}
+              >
+                {isSubmitting && (
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                )}
                 {isSubmitting ? "Cancelling…" : "Cancel request"}
               </Button>
             </DialogFooter>

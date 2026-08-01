@@ -74,4 +74,3 @@ Never assign multiple agents to edit the same files.
 - Verification not possible locally:
 - Required user action:
 - Optional follow-up outside scope:
-

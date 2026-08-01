@@ -9,13 +9,19 @@ export const savedAddressSchema = z.object({
   recipientName: z
     .string()
     .trim()
-    .min(2, "Enter the recipient or contact name.")
-    .max(120, "Name must be 120 characters or fewer."),
+    .max(120, "Name must be 120 characters or fewer.")
+    .refine(
+      (value) => value.length === 0 || value.length >= 2,
+      "Name must be at least 2 characters.",
+    ),
   phoneNumber: z
     .string()
     .trim()
-    .min(7, "Enter a valid phone number.")
-    .max(30, "Phone number must be 30 characters or fewer."),
+    .max(30, "Phone number must be 30 characters or fewer.")
+    .refine(
+      (value) => value.length === 0 || value.length >= 7,
+      "Enter a valid phone number or leave it blank.",
+    ),
   fullAddress: z
     .string()
     .trim()

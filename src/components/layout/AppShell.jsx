@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MessageSquareText,
   PanelLeftClose,
   PanelLeftOpen,
   Search,
@@ -46,6 +47,7 @@ import { toast } from "sonner";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { AccountAccessNotice } from "./AccountAccessNotice";
 import { AccountDeletionNotice } from "./AccountDeletionNotice";
+import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
 
 const SIDEBAR_STORAGE_KEY = "butuango-desktop-sidebar-open";
 
@@ -64,6 +66,7 @@ function getPageTitle(pathname) {
   if (pathname === "/admin/disputes") return "Dispute Review";
   if (pathname === "/admin/reports") return "Safety Reports";
   if (pathname === "/admin/deletion-requests") return "Deletion Requests";
+  if (pathname === "/admin/feedback") return "Product Feedback";
   if (pathname === "/admin/audit") return "Admin Audit Log";
   if (pathname === "/admin/profile") return "Admin Profile";
   if (pathname.endsWith("/dashboard")) return "Dashboard";
@@ -122,6 +125,11 @@ export function AppShell() {
             icon: Trash2,
           },
           { to: "/admin/audit", label: "Audit Log", icon: Activity },
+          {
+            to: "/admin/feedback",
+            label: "Product Feedback",
+            icon: MessageSquareText,
+          },
           { to: "/admin/profile", label: "Profile", icon: UserRound },
         ]
       : [
@@ -281,6 +289,7 @@ export function AppShell() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <FeedbackDialog pagePath={location.pathname} pageTitle={pageTitle} />
           <NotificationCenter />
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>

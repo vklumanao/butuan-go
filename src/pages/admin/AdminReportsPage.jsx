@@ -341,9 +341,7 @@ export function AdminReportsPage() {
                     step="1"
                     className="pl-10"
                     value={restrictionDays}
-                    onChange={(event) =>
-                      setRestrictionDays(event.target.value)
-                    }
+                    onChange={(event) => setRestrictionDays(event.target.value)}
                     disabled={outcome !== "ACTIONED"}
                   />
                 </div>
@@ -362,9 +360,7 @@ export function AdminReportsPage() {
               </Button>
             </DialogClose>
             <Button onClick={submitResolution} disabled={resolving}>
-              {resolving && (
-                <LoaderCircle className="h-4 w-4 animate-spin" />
-              )}
+              {resolving && <LoaderCircle className="h-4 w-4 animate-spin" />}
               {resolving ? "Recording..." : "Confirm outcome"}
             </Button>
           </DialogFooter>

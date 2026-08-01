@@ -33,6 +33,7 @@ import { AdminDisputesPage } from "@/pages/admin/AdminDisputesPage";
 import { AdminAuditPage } from "@/pages/admin/AdminAuditPage";
 import { AdminReportsPage } from "@/pages/admin/AdminReportsPage";
 import { AdminDeletionRequestsPage } from "@/pages/admin/AdminDeletionRequestsPage";
+import { AdminFeedbackPage } from "@/pages/admin/AdminFeedbackPage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export function AppRoutes() {
@@ -119,6 +120,7 @@ export function AppRoutes() {
               element={<AdminDeletionRequestsPage />}
             />
             <Route path="/admin/audit" element={<AdminAuditPage />} />
+            <Route path="/admin/feedback" element={<AdminFeedbackPage />} />
             <Route path="/admin/profile" element={<ProfilePage />} />
           </Route>
         </Route>

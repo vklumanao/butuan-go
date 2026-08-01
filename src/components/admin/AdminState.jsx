@@ -22,7 +22,12 @@ export function AdminErrorState({ message, onRetry }) {
           <p className="font-bold">Admin data unavailable</p>
           <p className="mt-1 leading-6">{message}</p>
           {onRetry && (
-            <Button variant="outline" size="sm" className="mt-3" onClick={onRetry}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={onRetry}
+            >
               <RefreshCw className="h-4 w-4" />
               Try again
             </Button>

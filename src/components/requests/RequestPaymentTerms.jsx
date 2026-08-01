@@ -16,6 +16,15 @@ import { FormField } from "@/components/common/FormField";
 import { Alert } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 
+const PAYMENT_ARRANGEMENT_DESCRIPTIONS = Object.freeze({
+  [PAYMENT_ARRANGEMENTS.NO_PURCHASE]:
+    "No purchase reimbursement is expected. The selected payer pays only the agreed Runner fee.",
+  [PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID]:
+    "The purchase is paid with the merchant before pickup. The Runner does not use personal money for the item.",
+  [PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE]:
+    "The Runner may voluntarily use personal money up to the agreed limit and is paid directly after receipt review.",
+});
+
 export function RequestPaymentFields({
   register,
   errors,
@@ -24,11 +33,6 @@ export function RequestPaymentFields({
   expenseBudget,
   idPrefix = "payment",
 }) {
-  const requiresPurchase = [
-    PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID,
-    PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE,
-  ].includes(paymentArrangement);
-
   return (
     <section
       className="rounded-xl border border-slate-200 p-4 sm:p-5"
@@ -115,7 +119,7 @@ export function RequestPaymentFields({
         <FormField
           id={`${idPrefix}PayerType`}
           label={
-            requiresPurchase
+            paymentArrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
               ? "Who will reimburse expenses and pay the Runner fee?"
               : "Who will pay the Runner fee?"
           }
@@ -185,12 +189,16 @@ export function PaymentTermsSummary({
 
   const arrangementLabel =
     PAYMENT_ARRANGEMENT_LABELS[terms.arrangement] || terms.arrangement;
-  const payerLabel =
-    PAYMENT_PAYER_LABELS[terms.payer_type] || terms.payer_type;
+  const payerLabel = PAYMENT_PAYER_LABELS[terms.payer_type] || terms.payer_type;
+  const arrangementDescription =
+    PAYMENT_ARRANGEMENT_DESCRIPTIONS[terms.arrangement] ||
+    "Review the agreed payment terms before continuing.";
+  const maximumAdvance = Number(terms.maximum_advance) || 0;
+  const runnerFee = Number(serviceFee) || 0;
   const total =
     terms.arrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
-      ? Number(terms.maximum_advance) + Number(serviceFee)
-      : Number(serviceFee);
+      ? maximumAdvance + runnerFee
+      : runnerFee;
 
   return (
     <div
@@ -201,39 +209,59 @@ export function PaymentTermsSummary({
       <div className="flex gap-3">
         <ReceiptText className="mt-0.5 h-5 w-5 shrink-0 text-brand-700" />
         <div className="min-w-0 flex-1">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-brand-700">
+            Direct-payment plan
+          </p>
           <p className="font-bold text-slate-950">{arrangementLabel}</p>
           <p className="mt-1 text-sm text-slate-600">{payerLabel}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            {arrangementDescription}
+          </p>
         </div>
       </div>
 
       <dl className="mt-4 space-y-2 border-t border-slate-200 pt-3 text-sm">
+        {terms.arrangement === PAYMENT_ARRANGEMENTS.NO_PURCHASE && (
+          <div className="flex justify-between gap-4">
+            <dt className="text-slate-600">Purchase expense</dt>
+            <dd className="font-bold">{formatCurrency(0)}</dd>
+          </div>
+        )}
         {terms.arrangement === PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID && (
           <div className="flex justify-between gap-4">
-            <dt className="text-slate-600">Prepaid purchase estimate</dt>
+            <dt className="text-slate-600">
+              Purchase estimate
+              <span className="block text-xs">paid to merchant</span>
+            </dt>
             <dd className="font-bold">{formatCurrency(expenseBudget)}</dd>
           </div>
         )}
         {terms.arrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE && (
           <div className="flex justify-between gap-4">
-            <dt className="text-slate-600">Maximum Runner advance</dt>
+            <dt className="text-slate-600">Maximum reimbursement</dt>
             <dd className="font-bold text-amber-800">
-              {formatCurrency(terms.maximum_advance)}
+              {formatCurrency(maximumAdvance)}
             </dd>
           </div>
         )}
         <div className="flex justify-between gap-4">
           <dt className="text-slate-600">Runner fee</dt>
-          <dd className="font-bold">{formatCurrency(serviceFee)}</dd>
+          <dd className="font-bold">{formatCurrency(runnerFee)}</dd>
         </div>
-        <div className="flex justify-between gap-4">
+        <div className="flex justify-between gap-4 border-t border-slate-200 pt-2">
           <dt className="font-semibold text-slate-800">
             {terms.arrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
-              ? "Maximum payment to Runner"
-              : "Expected payment to Runner"}
+              ? "Maximum direct payment"
+              : "Direct payment to Runner"}
           </dt>
           <dd className="font-black text-brand-800">{formatCurrency(total)}</dd>
         </div>
       </dl>
+
+      <p className="mt-3 border-t border-slate-200 pt-3 text-xs leading-5 text-slate-500">
+        Planned amounts only. ButuanGo records the agreement but does not
+        collect, hold, process, or guarantee payment.
+      </p>
 
       {details && (
         <div className="mt-3 space-y-2 border-t border-slate-200 pt-3 text-sm">
@@ -253,9 +281,7 @@ export function PaymentTermsSummary({
               <UserRound className="mt-0.5 h-4 w-4 shrink-0 text-brand-700" />
               <span>
                 Payer:{" "}
-                <strong className="text-slate-900">
-                  {details.payer_name}
-                </strong>
+                <strong className="text-slate-900">{details.payer_name}</strong>
                 {details.payer_phone ? ` · ${details.payer_phone}` : ""}
               </span>
             </p>

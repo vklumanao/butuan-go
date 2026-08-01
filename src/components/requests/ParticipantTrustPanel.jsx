@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  Ban,
-  Flag,
-  LoaderCircle,
-  ShieldCheck,
-  Star,
-} from "lucide-react";
+import { Ban, Flag, LoaderCircle, ShieldCheck, Star } from "lucide-react";
 import { toast } from "sonner";
 import {
   ACCOUNT_REPORT_CATEGORIES,

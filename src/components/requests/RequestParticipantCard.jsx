@@ -34,9 +34,7 @@ export function RequestParticipantCard({
         <CardContent className="flex gap-3 p-5 pt-3 sm:p-6 sm:pt-3">
           <UserRound className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
           <div>
-            <p className="font-semibold text-slate-800">
-              Waiting for a Runner
-            </p>
+            <p className="font-semibold text-slate-800">Waiting for a Runner</p>
             <p className="mt-1 text-sm leading-6 text-slate-600">
               Runner information will appear here after someone accepts this
               request.
@@ -90,8 +88,7 @@ export function RequestParticipantCard({
           <p className="flex items-start gap-2 text-slate-600">
             <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              Member since{" "}
-              {formatDateTime(participant.member_since, "Unknown")}
+              Member since {formatDateTime(participant.member_since, "Unknown")}
             </span>
           </p>
           {isRunner && acceptedAt && (

@@ -19,6 +19,7 @@ const actionLabels = {
   ACCOUNT_RESTRICTION_CLEARED: "Restriction cleared",
   ACCOUNT_REPORT_RESOLVED: "Safety report resolved",
   ACCOUNT_ANONYMIZED: "Account anonymized",
+  USER_FEEDBACK_UPDATED: "Product feedback updated",
 };
 
 export function AdminAuditPage() {
@@ -48,7 +49,7 @@ export function AdminAuditPage() {
     <div className="mx-auto max-w-7xl p-4 sm:p-8">
       <AdminPageHeader
         title="Admin audit log"
-        description="Review protected dispute, safety, account-control, and anonymization actions. Normal users cannot write to or read this operational trail."
+        description="Review protected dispute, safety, feedback, account-control, and anonymization actions. Normal users cannot write to or read this operational trail."
       />
 
       <div className="mt-8">

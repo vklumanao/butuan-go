@@ -117,9 +117,10 @@ function createPopupContent(properties, navigate) {
 
   const payment = document.createElement("p");
   payment.className = "butuango-map-popup__fee";
-  payment.textContent = Number(properties.maximumAdvance) > 0
-    ? `${properties.paymentLabel}: up to ${formatCurrency(properties.maximumAdvance)}`
-    : properties.paymentLabel;
+  payment.textContent =
+    Number(properties.maximumAdvance) > 0
+      ? `${properties.paymentLabel}: up to ${formatCurrency(properties.maximumAdvance)}`
+      : properties.paymentLabel;
   content.appendChild(payment);
 
   if (properties.distanceLabel) {

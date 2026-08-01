@@ -37,6 +37,8 @@ import {
   getFriendlyRequestError,
 } from "@/lib/requestUtils";
 import { RequestStatusBadge } from "@/components/requests/RequestStatusBadge";
+import { RequestProgressTimeline } from "@/components/requests/RequestProgressTimeline";
+import { RunnerTaskChecklist } from "@/components/requests/RunnerTaskChecklist";
 import { RunnerTaskActions } from "@/components/requests/RunnerTaskActions";
 import { RequestLocationDetails } from "@/components/requests/RequestLocationDetails";
 import { RequestParticipantCard } from "@/components/requests/RequestParticipantCard";
@@ -423,8 +425,7 @@ export function RunnerRequestDetailsPage() {
 
   const isOpen = request.status === REQUEST_STATUSES.OPEN;
   const requiresCashAdvance =
-    request.payment_terms?.arrangement ===
-    PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE;
+    request.payment_terms?.arrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE;
   const paymentTermsMissing = !request.payment_terms;
   const isAtCapacity = isOpen && Boolean(activeTask);
   const usesPurchaseEvidence = [
@@ -477,6 +478,20 @@ export function RunnerRequestDetailsPage() {
           </Button>
         )}
       </div>
+
+      <RequestProgressTimeline request={request} role="runner" />
+
+      {!isOpen && request.status !== REQUEST_STATUSES.CANCELLED && (
+        <RunnerTaskChecklist
+          request={request}
+          hasLocation={Boolean(location)}
+          priceChanges={priceChanges}
+          receipts={receipts}
+          handoff={handoff}
+          settlement={settlement}
+          disputes={disputes}
+        />
+      )}
 
       {isAtCapacity && (
         <Alert className="mt-6 border-amber-200 bg-amber-50 text-amber-900">
@@ -538,14 +553,16 @@ export function RunnerRequestDetailsPage() {
             </CardContent>
           </Card>
 
-          <RequestLocationDetails
-            location={location}
-            locked={isOpen}
-            onRefresh={!isOpen && !location ? loadRequest : null}
-          />
+          <div id="runner-private-location" className="scroll-mt-24">
+            <RequestLocationDetails
+              location={location}
+              locked={isOpen}
+              onRefresh={!isOpen && !location ? loadRequest : null}
+            />
+          </div>
 
           {!isOpen && (usesPurchaseEvidence || priceChanges.length > 0) && (
-            <Card>
+            <Card id="runner-payment-evidence" className="scroll-mt-24">
               <CardHeader>
                 <CardTitle>Price approval and receipts</CardTitle>
               </CardHeader>
@@ -563,11 +580,8 @@ export function RunnerRequestDetailsPage() {
           )}
 
           {!isOpen &&
-            (handoff ||
-              settlement ||
-              failure ||
-              disputes.length > 0) && (
-              <Card>
+            (handoff || settlement || failure || disputes.length > 0) && (
+              <Card id="runner-handoff-settlement" className="scroll-mt-24">
                 <CardHeader>
                   <CardTitle>Handoff, payment, and resolution</CardTitle>
                 </CardHeader>
@@ -655,7 +669,7 @@ export function RunnerRequestDetailsPage() {
           </Card>
 
           {!isOpen && (
-            <Card>
+            <Card id="runner-controls" className="scroll-mt-24">
               <CardContent className="p-5">
                 <ClipboardCheck className="h-6 w-6 text-brand-600" />
                 <h2 className="mt-3 font-bold">Runner controls</h2>

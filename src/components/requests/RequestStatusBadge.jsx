@@ -1,5 +1,8 @@
 import { Badge } from "@/components/ui/badge";
-import { REQUEST_STATUSES, REQUEST_STATUS_LABELS } from "@/lib/requestConstants";
+import {
+  REQUEST_STATUSES,
+  REQUEST_STATUS_LABELS,
+} from "@/lib/requestConstants";
 import { cn } from "@/lib/utils";
 
 const statusStyles = {
@@ -13,5 +16,14 @@ const statusStyles = {
 };
 
 export function RequestStatusBadge({ status, className }) {
-  return <Badge className={cn(statusStyles[status] || "bg-slate-100 text-slate-700", className)}>{REQUEST_STATUS_LABELS[status] || status}</Badge>;
+  return (
+    <Badge
+      className={cn(
+        statusStyles[status] || "bg-slate-100 text-slate-700",
+        className,
+      )}
+    >
+      {REQUEST_STATUS_LABELS[status] || status}
+    </Badge>
+  );
 }

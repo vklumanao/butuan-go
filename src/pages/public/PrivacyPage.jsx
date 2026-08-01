@@ -17,10 +17,16 @@ const PRIVACY_SECTIONS = [
   { id: "information-collected", title: "Information we collect" },
   { id: "how-information-is-used", title: "How information is used" },
   { id: "requests-and-locations", title: "Requests and location privacy" },
-  { id: "authentication-and-notifications", title: "Authentication and notifications" },
+  {
+    id: "authentication-and-notifications",
+    title: "Authentication and notifications",
+  },
   { id: "payment-information", title: "Payment information" },
   { id: "browser-and-demo-data", title: "Browser storage and demo mode" },
-  { id: "choices-and-limitations", title: "Your choices and current limitations" },
+  {
+    id: "choices-and-limitations",
+    title: "Your choices and current limitations",
+  },
 ];
 
 export function PrivacyPage() {
@@ -39,12 +45,12 @@ export function PrivacyPage() {
         icon={UserRound}
       >
         <p>
-          Google provides the name, email address, and optional avatar associated
-          with the account you select. During ButuanGo onboarding, you provide a
-          phone number, choose an initial Requestor or Runner workspace, and
-          acknowledge the current Terms, Privacy Notice, and Safety guidance.
-          Your profile stores those account details, acceptance records, signup
-          method, current workspace, and account dates.
+          Google provides the name, email address, and optional avatar
+          associated with the account you select. During ButuanGo onboarding,
+          you provide a phone number, choose an initial Requestor or Runner
+          workspace, and acknowledge the current Terms, Privacy Notice, and
+          Safety guidance. Your profile stores those account details, acceptance
+          records, signup method, current workspace, and account dates.
         </p>
         <p>
           When you use marketplace features, the platform stores request
@@ -60,15 +66,16 @@ export function PrivacyPage() {
         icon={Pencil}
       >
         <p>
-          Information is used to create and secure accounts, display the
-          correct workspace, publish and manage lawful errands, coordinate
-          assigned participants, preserve request history, and show relevant
+          Information is used to create and secure accounts, display the correct
+          workspace, publish and manage lawful errands, coordinate assigned
+          participants, preserve request history, and show relevant
           notifications.
         </p>
         <p>
-          The initial onboarding role is retained as account history. Switching the
-          active mode changes the workspace and permissions currently in use;
-          it does not create a second account or make private records public.
+          The initial onboarding role is retained as account history. Switching
+          the active mode changes the workspace and permissions currently in
+          use; it does not create a second account or make private records
+          public.
         </p>
       </LegalSection>
 
@@ -80,16 +87,16 @@ export function PrivacyPage() {
         <p>
           Open requests expose only the general information needed for a Runner
           to evaluate an errand. Exact pickup or delivery details and private
-          participant summaries are restricted to the Requestor and the
-          assigned Runner through database access controls.
+          participant summaries are restricted to the Requestor and the assigned
+          Runner through database access controls.
         </p>
         <p>
           Both Requestor and Runner modes may maintain private saved address
           templates. A Requestor can select an address while creating a request;
           the platform copies a location snapshot into that request so later
-          edits to the saved template do not silently change an existing task.
-          A Runner's saved addresses are not automatically shared with a
-          Requestor or attached to a task.
+          edits to the saved template do not silently change an existing task. A
+          Runner's saved addresses are not automatically shared with a Requestor
+          or attached to a task.
         </p>
         <p>
           A Requestor may optionally select a public request area using device
@@ -114,9 +121,9 @@ export function PrivacyPage() {
       >
         <p>
           Supabase Authentication handles the Google sign-in session. Google
-          manages the selected account credential and recovery methods;
-          ButuanGo does not receive or store your Google password. The Google
-          account confirms control of an email identity but is not identity
+          manages the selected account credential and recovery methods; ButuanGo
+          does not receive or store your Google password. The Google account
+          confirms control of an email identity but is not identity
           verification.
         </p>
         <p>
@@ -155,19 +162,18 @@ export function PrivacyPage() {
           confirmation and timestamp.
         </p>
         <p>
-          Failed-delivery reports, Requestor acknowledgements, disputes,
-          dispute outcomes, and account restrictions, suspensions, permanent
-          bans, and restorations may be retained with their reasons,
-          descriptions, involved accounts, and timestamps.
-          The participants can view the records relevant to their shared
-          request. Authorized Admin accounts can review a limited operations
-          directory containing account name, email, roles, onboarding state,
-          request participation counts, and active account-control state. They
-          can also review disputes, record outcomes or access controls, restore
-          access, and view the resulting Admin audit events through protected
-          backend functions.
-          The Admin request directory intentionally excludes exact private
-          pickup and delivery addresses.
+          Failed-delivery reports, Requestor acknowledgements, disputes, dispute
+          outcomes, and account restrictions, suspensions, permanent bans, and
+          restorations may be retained with their reasons, descriptions,
+          involved accounts, and timestamps. The participants can view the
+          records relevant to their shared request. Authorized Admin accounts
+          can review a limited operations directory containing account name,
+          email, roles, onboarding state, request participation counts, and
+          active account-control state. They can also review disputes, record
+          outcomes or access controls, restore access, and view the resulting
+          Admin audit events through protected backend functions. The Admin
+          request directory intentionally excludes exact private pickup and
+          delivery addresses.
         </p>
         <p>
           After a completed request, participants may submit one transaction
@@ -181,10 +187,9 @@ export function PrivacyPage() {
           Safety reports store the reporter, reported account, related request,
           category, factual description, review outcome, and timestamps. The
           reported account cannot read the private report record. Authorized
-          Admin accounts can review it, record an outcome, and apply a
-          temporary restriction. Reports and ratings must not contain
-          passwords, banking credentials, government ID images, or unrelated
-          personal information.
+          Admin accounts can review it, record an outcome, and apply a temporary
+          restriction. Reports and ratings must not contain passwords, banking
+          credentials, government ID images, or unrelated personal information.
         </p>
         <p>
           ButuanGo does not collect card numbers, bank credentials, wallet
@@ -242,8 +247,8 @@ export function PrivacyPage() {
           request pauses new marketplace commitments and may be cancelled for
           seven days. After protected Admin processing, profile contact data,
           Google photo, saved addresses, notifications, authored rating
-          comments, and supplied private location or payer snapshots are
-          removed or redacted.
+          comments, and supplied private location or payer snapshots are removed
+          or redacted.
         </p>
         <p>
           Transaction, dispute, safety, and Admin audit records remain under a

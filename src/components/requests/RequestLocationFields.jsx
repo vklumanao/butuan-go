@@ -47,15 +47,61 @@ function SavedAddressSelector({
 }) {
   return (
     <div className="mb-5 rounded-lg border border-brand-100 bg-brand-50/50 p-3">
-      <label htmlFor={id} className="text-sm font-semibold text-brand-900">
+      <p id={`${id}Label`} className="text-sm font-semibold text-brand-900">
         {label}
-      </label>
+      </p>
+      {loading && (
+        <p className="mt-2 text-sm text-brand-900/70">
+          Loading saved locations...
+        </p>
+      )}
+      {!loading && addresses.length > 0 && (
+        <div
+          className="mt-3 grid gap-2 sm:grid-cols-2"
+          role="group"
+          aria-labelledby={`${id}Label`}
+        >
+          {addresses.map((address) => {
+            const selected = value === address.id;
+            return (
+              <button
+                key={address.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => onChange(address.id)}
+                className={`rounded-lg border bg-white p-3 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-brand-600/30 ${
+                  selected
+                    ? "border-brand-600 ring-1 ring-brand-600"
+                    : "border-brand-200 hover:border-brand-400"
+                }`}
+              >
+                <span className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-slate-900">
+                    {address.label}
+                  </span>
+                  {address.is_default && (
+                    <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-brand-800">
+                      Default
+                    </span>
+                  )}
+                </span>
+                <span className="mt-1 line-clamp-2 block text-xs leading-5 text-slate-600">
+                  {address.full_address}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
       <select
         id={id}
+        tabIndex={-1}
+        aria-hidden="true"
+        aria-labelledby={`${id}Label`}
         value={value}
         disabled={loading}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-2 flex h-10 w-full rounded-lg border border-brand-200 bg-white px-3 text-sm outline-none focus-visible:border-brand-600 focus-visible:ring-2 focus-visible:ring-brand-600/20 disabled:opacity-60"
+        className="sr-only"
       >
         <option value="">
           {loading
@@ -69,11 +115,17 @@ function SavedAddressSelector({
           </option>
         ))}
       </select>
+      {!loading && addresses.length === 0 && (
+        <p className="mt-2 text-sm leading-6 text-brand-900/70">
+          No saved locations yet. Enter the details manually or add one from
+          your Profile.
+        </p>
+      )}
       <p className="mt-2 text-xs leading-5 text-brand-900/70">
-        Selecting an address copies a snapshot into this request. You can still
-        edit the copied fields below.{" "}
+        One tap copies the address, landmark, instructions, and any saved
+        recipient details. You can still edit this request.{" "}
         <Link to="/requestor/profile" className="font-semibold underline">
-          Manage saved addresses
+          Manage saved locations
         </Link>
       </p>
     </div>
@@ -311,11 +363,17 @@ export function RequestLocationFields({
         target === "delivery" ||
         fulfillmentType === FULFILLMENT_TYPES.PICKUP_ONLY
       ) {
-        setValue("contactName", address.recipient_name, { shouldDirty: true });
-        setValue("contactPhone", address.phone_number, {
-          shouldDirty: true,
-          shouldValidate: true,
-        });
+        if (address.recipient_name) {
+          setValue("contactName", address.recipient_name, {
+            shouldDirty: true,
+          });
+        }
+        if (address.phone_number) {
+          setValue("contactPhone", address.phone_number, {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
+        }
       }
     },
     [fulfillmentType, setValue],

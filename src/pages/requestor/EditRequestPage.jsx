@@ -122,7 +122,12 @@ export function EditRequestPage() {
       getRequestLocation(requestId),
       getRequestPaymentDetails(requestId),
     ]).then(
-      ([categoryResult, requestResult, locationResult, paymentDetailsResult]) => {
+      ([
+        categoryResult,
+        requestResult,
+        locationResult,
+        paymentDetailsResult,
+      ]) => {
         if (!active) return;
         if (
           categoryResult.error ||

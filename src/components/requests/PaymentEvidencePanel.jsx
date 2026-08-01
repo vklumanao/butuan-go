@@ -101,8 +101,7 @@ export function PaymentEvidencePanel({
     PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE,
   ].includes(request.payment_terms?.arrangement);
   const isRunnerAdvance =
-    request.payment_terms?.arrangement ===
-    PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE;
+    request.payment_terms?.arrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE;
   const needsCurrentConsent =
     isRunnerAdvance &&
     request.payment_terms?.runner_consented_amount !==
@@ -116,8 +115,7 @@ export function PaymentEvidencePanel({
     [receipts],
   );
   const expectedHandoff =
-    (isRunnerAdvance ? receiptTotal : 0) +
-    (Number(request.service_fee) || 0);
+    (isRunnerAdvance ? receiptTotal : 0) + (Number(request.service_fee) || 0);
   const canUpload =
     isRunner &&
     isInProgress &&
@@ -256,8 +254,7 @@ export function PaymentEvidencePanel({
     }
     if (
       isRunnerAdvance &&
-      receiptTotal + amount >
-        Number(request.payment_terms?.maximum_advance)
+      receiptTotal + amount > Number(request.payment_terms?.maximum_advance)
     ) {
       setPanelError(
         "The new receipt would exceed the approved limit. Request a higher limit first.",
@@ -337,18 +334,18 @@ export function PaymentEvidencePanel({
               isInProgress &&
               !pendingChange &&
               !needsCurrentConsent && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setPanelError("");
-                  setPriceDialogOpen(true);
-                }}
-              >
-                <BanknoteArrowUp className="h-4 w-4" />
-                Request higher limit
-              </Button>
-            )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setPanelError("");
+                    setPriceDialogOpen(true);
+                  }}
+                >
+                  <BanknoteArrowUp className="h-4 w-4" />
+                  Request higher limit
+                </Button>
+              )}
           </div>
 
           {pendingChange && (
@@ -410,27 +407,30 @@ export function PaymentEvidencePanel({
             </Alert>
           )}
 
-          {isRunner && isInProgress && !pendingChange && needsCurrentConsent && (
-            <Alert className="mt-3 border-emerald-200 bg-emerald-50 text-emerald-950">
-              <p className="font-bold">Approved limit needs your consent</p>
-              <p className="mt-1 text-sm leading-6">
-                Confirm the new{" "}
-                {formatCurrency(request.payment_terms?.maximum_advance)} limit
-                before buying or uploading a receipt.
-              </p>
-              <Button
-                size="sm"
-                className="mt-3"
-                disabled={busyAction === "consent"}
-                onClick={confirmNewLimit}
-              >
-                {busyAction === "consent" && (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                )}
-                I agree to the new limit
-              </Button>
-            </Alert>
-          )}
+          {isRunner &&
+            isInProgress &&
+            !pendingChange &&
+            needsCurrentConsent && (
+              <Alert className="mt-3 border-emerald-200 bg-emerald-50 text-emerald-950">
+                <p className="font-bold">Approved limit needs your consent</p>
+                <p className="mt-1 text-sm leading-6">
+                  Confirm the new{" "}
+                  {formatCurrency(request.payment_terms?.maximum_advance)} limit
+                  before buying or uploading a receipt.
+                </p>
+                <Button
+                  size="sm"
+                  className="mt-3"
+                  disabled={busyAction === "consent"}
+                  onClick={confirmNewLimit}
+                >
+                  {busyAction === "consent" && (
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                  )}
+                  I agree to the new limit
+                </Button>
+              </Alert>
+            )}
         </section>
       )}
 
@@ -448,7 +448,10 @@ export function PaymentEvidencePanel({
                     {formatCurrency(change.previous_maximum)} →{" "}
                     {formatCurrency(change.proposed_maximum)}
                   </p>
-                  <Badge variant="outline" className={statusClass(change.status)}>
+                  <Badge
+                    variant="outline"
+                    className={statusClass(change.status)}
+                  >
                     {PRICE_CHANGE_STATUS_LABELS[change.status] || change.status}
                   </Badge>
                 </div>
@@ -603,7 +606,8 @@ export function PaymentEvidencePanel({
                   htmlFor="receiptNote"
                   className="text-sm font-semibold text-slate-900"
                 >
-                  Note <span className="font-normal text-slate-500">(optional)</span>
+                  Note{" "}
+                  <span className="font-normal text-slate-500">(optional)</span>
                 </label>
                 <Textarea
                   id="receiptNote"

@@ -20,12 +20,7 @@ import { Button } from "@/components/ui/button";
 
 function GoogleIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-5 w-5"
-      role="img"
-      aria-label="Google"
-    >
+    <svg viewBox="0 0 24 24" className="h-5 w-5" role="img" aria-label="Google">
       <path
         fill="#4285F4"
         d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.41Z"
@@ -159,7 +154,9 @@ export function LoginPage() {
           </Link>
 
           <p className="text-sm font-bold uppercase tracking-[0.14em] text-brand-700">
-            {isPublicAuthEnabled ? "Get started or continue" : "Private development"}
+            {isPublicAuthEnabled
+              ? "Get started or continue"
+              : "Private development"}
           </p>
           <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
             {isPublicAuthEnabled ? (
