@@ -19,8 +19,14 @@ const TERMS_SECTIONS = [
   { id: "in-person-settlement", title: "Direct in-person settlement" },
   { id: "cancellation-and-release", title: "Cancellation and Runner release" },
   { id: "acceptable-use", title: "Acceptable use" },
-  { id: "responsibility-and-limitations", title: "Responsibility and limitations" },
-  { id: "changes-and-production-readiness", title: "Changes and production readiness" },
+  {
+    id: "responsibility-and-limitations",
+    title: "Responsibility and limitations",
+  },
+  {
+    id: "changes-and-production-readiness",
+    title: "Changes and production readiness",
+  },
 ];
 
 export function TermsPage() {
@@ -44,8 +50,8 @@ export function TermsPage() {
           described on this page and in the Community Safety guidance.
         </p>
         <p>
-          This is a development milestone, not a complete commercial service.
-          Do not use it for emergencies, high-value transactions, regulated
+          This is a development milestone, not a complete commercial service. Do
+          not use it for emergencies, high-value transactions, regulated
           activity, or situations that require professional guarantees.
         </p>
       </LegalSection>
@@ -57,8 +63,8 @@ export function TermsPage() {
       >
         <p>
           Provide accurate onboarding information, protect access to your Google
-          account, and use only an account you are authorized to control.
-          Google sign-in, profile information, and role labels are not identity
+          account, and use only an account you are authorized to control. Google
+          sign-in, profile information, and role labels are not identity
           verification.
         </p>
         <p>
@@ -99,8 +105,8 @@ export function TermsPage() {
         icon={HandCoins}
       >
         <p>
-          Each request identifies whether no purchase is needed, the merchant
-          is prepaid, or the Runner is asked to advance personal money. It also
+          Each request identifies whether no purchase is needed, the merchant is
+          prepaid, or the Runner is asked to advance personal money. It also
           identifies whether the Requestor or recipient will pay the Runner
           directly during meetup or delivery. ButuanGo does not collect, hold,
           transfer, guarantee, refund, or process funds.
@@ -148,11 +154,7 @@ export function TermsPage() {
         </p>
       </LegalSection>
 
-      <LegalSection
-        id="acceptable-use"
-        title="Acceptable use"
-        icon={Ban}
-      >
+      <LegalSection id="acceptable-use" title="Acceptable use" icon={Ban}>
         <p>
           Government transactions, prohibited goods, fraud, harassment,
           impersonation, unsafe activity, stolen property, dangerous materials,
@@ -178,12 +180,20 @@ export function TermsPage() {
         </p>
         <p>
           An authorized Admin may restrict new marketplace activity, apply a
-          temporary read-only suspension, permanently ban an account, or
-          restore access after recording a reason. Suspension and permanent ban
-          preserve transaction history and access to relevant dispute and
-          safety-report records; they do not delete the Google or ButuanGo
-          account. These controls are administrative safety measures, not legal
-          findings.
+          temporary read-only suspension, permanently ban an account, or restore
+          access after recording a reason. Suspension and permanent ban preserve
+          transaction history and access to relevant dispute and safety-report
+          records; they do not delete the Google or ButuanGo account. These
+          controls are administrative safety measures, not legal findings.
+        </p>
+        <p>
+          A user may request application-level account deletion only after
+          unfinished requests and open review matters are resolved. The request
+          pauses new marketplace commitments and has a seven-day cancellation
+          period. Completion anonymizes reusable profile data but preserves a
+          pseudonymous transaction, dispute, safety, audit, and authentication
+          safety record. Account deletion cannot be used to erase obligations,
+          evidence, reports, or an existing enforcement history.
         </p>
       </LegalSection>
 
@@ -205,9 +215,8 @@ export function TermsPage() {
           resolution functions, but a rating, activity count, report, or Admin
           outcome is not identity verification or a guarantee of trust. The
           service does not yet provide a staffed support desk, guaranteed
-          investigation, appeal process, or legal adjudication.
-          Availability may be interrupted while development and testing
-          continue.
+          investigation, appeal process, or legal adjudication. Availability may
+          be interrupted while development and testing continue.
         </p>
       </LegalSection>
 

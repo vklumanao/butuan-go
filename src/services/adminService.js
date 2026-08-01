@@ -129,3 +129,29 @@ export async function resolveAdminAccountReport({
   );
   return { data: normalizeRpcRow(data), error };
 }
+
+export async function listAdminAccountDeletionRequests({
+  status = "PENDING",
+  limit = 50,
+  offset = 0,
+} = {}) {
+  return supabase.rpc("admin_list_account_deletion_requests", {
+    p_status: status,
+    p_limit: limit,
+    p_offset: offset,
+  });
+}
+
+export async function completeAdminAccountAnonymization({
+  deletionRequestId,
+  confirmation,
+}) {
+  const { data, error } = await supabase.rpc(
+    "admin_complete_account_anonymization",
+    {
+      p_deletion_request_id: deletionRequestId,
+      p_confirmation: confirmation,
+    },
+  );
+  return { data: normalizeRpcRow(data), error };
+}

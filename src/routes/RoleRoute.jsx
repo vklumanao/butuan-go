@@ -10,6 +10,7 @@ export function RoleRoute({ allowedRole }) {
     return (
       <Navigate to="/unauthorized" replace state={{ reason: profileError }} />
     );
+  if (profile.anonymized_at) return <Navigate to="/account-deleted" replace />;
   if (!hasCompletedOnboarding(profile))
     return <Navigate to="/onboarding" replace />;
   if (getActiveRole(profile) !== allowedRole)

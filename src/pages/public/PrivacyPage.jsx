@@ -237,10 +237,21 @@ export function PrivacyPage() {
           directly assigning themselves a protected role.
         </p>
         <p>
-          Self-service account deletion, data export, formal privacy-request
-          intake, retention schedules, and a production privacy contact are not
-          yet implemented. Do not use real sensitive data until those processes
-          and final policies are ready.
+          You may request account deletion from your Profile when there are no
+          unfinished requests, open disputes, or open safety reports. The
+          request pauses new marketplace commitments and may be cancelled for
+          seven days. After protected Admin processing, profile contact data,
+          Google photo, saved addresses, notifications, authored rating
+          comments, and supplied private location or payer snapshots are
+          removed or redacted.
+        </p>
+        <p>
+          Transaction, dispute, safety, and Admin audit records remain under a
+          non-identifying profile label. The Supabase authentication identity is
+          retained as a protected safety record so the same Google identity
+          cannot recreate the deleted account. Data export, formal
+          privacy-request intake, finalized retention schedules, and a
+          production privacy contact are not yet implemented.
         </p>
       </LegalSection>
     </LegalPageLayout>

@@ -6,7 +6,7 @@ import {
 } from "./demoService";
 
 const PROFILE_SELECT =
-  "id, full_name, email, phone_number, role, active_role, avatar_url, onboarding_completed_at, terms_accepted_at, terms_version, signup_method, created_at, updated_at";
+  "id, full_name, email, phone_number, role, active_role, avatar_url, onboarding_completed_at, terms_accepted_at, terms_version, signup_method, anonymized_at, created_at, updated_at";
 
 export async function getProfile(userId) {
   if (isDemoMode) return demoGetProfile(userId);

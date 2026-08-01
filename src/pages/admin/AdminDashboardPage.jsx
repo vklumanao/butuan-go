@@ -30,6 +30,8 @@ const auditLabels = {
   ACCOUNT_RESTRICTED: "Account restricted",
   ACCOUNT_RESTRICTION_UPDATED: "Restriction updated",
   ACCOUNT_RESTRICTION_CLEARED: "Restriction cleared",
+  ACCOUNT_REPORT_RESOLVED: "Safety report resolved",
+  ACCOUNT_ANONYMIZED: "Account anonymized",
 };
 
 function StatCard({ label, value, helper, icon: Icon, to, tone }) {
@@ -40,12 +42,17 @@ function StatCard({ label, value, helper, icon: Icon, to, tone }) {
     slate: "bg-slate-100 text-slate-700",
   };
   return (
-    <Link to={to} className="group rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+    <Link
+      to={to}
+      className="group rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+    >
       <Card className="h-full transition group-hover:-translate-y-0.5 group-hover:border-brand-200 group-hover:shadow-md">
         <CardContent className="p-5">
           <div className="flex items-start justify-between gap-3">
             <p className="text-sm font-semibold text-slate-600">{label}</p>
-            <span className={`grid h-9 w-9 place-items-center rounded-xl ${tones[tone] || tones.slate}`}>
+            <span
+              className={`grid h-9 w-9 place-items-center rounded-xl ${tones[tone] || tones.slate}`}
+            >
               <Icon className="h-4.5 w-4.5" />
             </span>
           </div>
@@ -104,7 +111,11 @@ export function AdminDashboardPage() {
         }
       />
 
-      {loading && <div className="mt-8"><AdminLoadingState /></div>}
+      {loading && (
+        <div className="mt-8">
+          <AdminLoadingState />
+        </div>
+      )}
       {!loading && error && (
         <div className="mt-8">
           <AdminErrorState message={error} onRetry={loadDashboard} />
@@ -113,7 +124,10 @@ export function AdminDashboardPage() {
 
       {!loading && !error && summary && (
         <>
-          <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Admin operations summary">
+          <section
+            className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+            aria-label="Admin operations summary"
+          >
             <StatCard
               label="Accounts"
               value={summary.total_accounts}
@@ -153,7 +167,9 @@ export function AdminDashboardPage() {
               <CardHeader className="flex-row items-center justify-between gap-4">
                 <div>
                   <CardTitle>Open dispute queue</CardTitle>
-                  <p className="mt-1 text-sm text-slate-600">Oldest unresolved operational risk should be reviewed first.</p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Oldest unresolved operational risk should be reviewed first.
+                  </p>
                 </div>
                 <Button variant="outline" size="sm" asChild>
                   <Link to="/admin/disputes">View all</Link>
@@ -161,19 +177,34 @@ export function AdminDashboardPage() {
               </CardHeader>
               <CardContent>
                 {disputes.length === 0 ? (
-                  <AdminEmptyState title="No open disputes" description="Participant disputes will appear here when they require review." />
+                  <AdminEmptyState
+                    title="No open disputes"
+                    description="Participant disputes will appear here when they require review."
+                  />
                 ) : (
                   <ul className="space-y-3">
                     {disputes.map((dispute) => (
                       <li key={dispute.id}>
-                        <Link to="/admin/disputes" className="block rounded-xl border border-slate-200 p-4 transition hover:border-brand-300 hover:bg-brand-50/40">
+                        <Link
+                          to="/admin/disputes"
+                          className="block rounded-xl border border-slate-200 p-4 transition hover:border-brand-300 hover:bg-brand-50/40"
+                        >
                           <div className="flex flex-wrap items-center gap-2">
-                            <Badge className="bg-amber-100 text-amber-900">Open</Badge>
-                            <span className="text-xs text-slate-500">{formatDateTime(dispute.created_at, "")}</span>
+                            <Badge className="bg-amber-100 text-amber-900">
+                              Open
+                            </Badge>
+                            <span className="text-xs text-slate-500">
+                              {formatDateTime(dispute.created_at, "")}
+                            </span>
                           </div>
-                          <p className="mt-2 font-bold text-slate-950">{dispute.request_title}</p>
+                          <p className="mt-2 font-bold text-slate-950">
+                            {dispute.request_title}
+                          </p>
                           <p className="mt-1 text-sm text-slate-600">
-                            {DISPUTE_CATEGORY_LABELS[dispute.category] || dispute.category} · {dispute.opener_name} reported {dispute.reported_name}
+                            {DISPUTE_CATEGORY_LABELS[dispute.category] ||
+                              dispute.category}{" "}
+                            · {dispute.opener_name} reported{" "}
+                            {dispute.reported_name}
                           </p>
                         </Link>
                       </li>
@@ -187,7 +218,9 @@ export function AdminDashboardPage() {
               <CardHeader className="flex-row items-center justify-between gap-4">
                 <div>
                   <CardTitle>Recent Admin activity</CardTitle>
-                  <p className="mt-1 text-sm text-slate-600">Protected resolution and restriction events.</p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Protected resolution and restriction events.
+                  </p>
                 </div>
                 <Button variant="outline" size="sm" asChild>
                   <Link to="/admin/audit">Audit log</Link>
@@ -195,18 +228,30 @@ export function AdminDashboardPage() {
               </CardHeader>
               <CardContent>
                 {auditEvents.length === 0 ? (
-                  <AdminEmptyState title="No Admin actions yet" description="Future dispute and restriction actions will create audit events." />
+                  <AdminEmptyState
+                    title="No Admin actions yet"
+                    description="Future dispute and restriction actions will create audit events."
+                  />
                 ) : (
                   <ul className="space-y-3">
                     {auditEvents.map((event) => (
-                      <li key={event.id} className="flex gap-3 rounded-xl border border-slate-200 p-4">
+                      <li
+                        key={event.id}
+                        className="flex gap-3 rounded-xl border border-slate-200 p-4"
+                      >
                         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-700">
                           <Activity className="h-4 w-4" />
                         </span>
                         <div className="min-w-0">
-                          <p className="font-bold text-slate-900">{auditLabels[event.action] || event.action}</p>
-                          <p className="mt-1 truncate text-sm text-slate-600">{event.admin_name} · {event.entity_type}</p>
-                          <p className="mt-1 text-xs text-slate-500">{formatDateTime(event.created_at, "")}</p>
+                          <p className="font-bold text-slate-900">
+                            {auditLabels[event.action] || event.action}
+                          </p>
+                          <p className="mt-1 truncate text-sm text-slate-600">
+                            {event.admin_name} · {event.entity_type}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {formatDateTime(event.created_at, "")}
+                          </p>
                         </div>
                       </li>
                     ))}

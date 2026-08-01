@@ -31,6 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/common/FormField";
 import { SavedAddressManager } from "@/components/addresses/SavedAddressManager";
+import { AccountDeletionPanel } from "@/components/profile/AccountDeletionPanel";
 
 export function ProfilePage() {
   const { user, profile, refreshProfile } = useAuth();
@@ -236,7 +237,10 @@ export function ProfilePage() {
         </CardContent>
       </Card>
       {activeRole !== USER_ROLES.ADMIN && (
-        <SavedAddressManager profile={profile} />
+        <>
+          <SavedAddressManager profile={profile} />
+          <AccountDeletionPanel />
+        </>
       )}
     </div>
   );
