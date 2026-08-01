@@ -18,6 +18,22 @@ Excluded from the current UI: email/SMS/browser-push notifications, platform-pro
 - MapLibre GL JS with a configurable vector basemap style
 - Supabase Authentication, PostgreSQL, and private Storage
 
+## Local development guardrails
+
+Repository-wide coding and release rules are defined in `AGENTS.md`. Start a
+material feature with `docs/FEATURE_BRIEF.md`, and use `docs/PROJECT_MAP.md` to
+find the smallest relevant set of files before exploring the codebase.
+
+Run the complete local verification command before committing:
+
+```bash
+npm run check
+```
+
+This runs ESLint followed by the production Vite build. Database changes still
+require their numbered Supabase migration and matching verification SQL. This
+project intentionally does not use GitHub Actions for these checks.
+
 ## Prerequisites
 
 - Node.js 20.19+ or 22.12+ (the current Vite requirement)
