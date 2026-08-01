@@ -4,8 +4,10 @@ import {
   ArrowRight,
   BellRing,
   CheckCircle2,
+  ChevronRight,
   CircleCheckBig,
   ClipboardList,
+  Globe2,
   HandHeart,
   Handshake,
   LockKeyhole,
@@ -18,6 +20,7 @@ import {
   Store,
   Truck,
   Utensils,
+  UsersRound,
   WashingMachine,
   WalletCards,
 } from "lucide-react";
@@ -61,6 +64,54 @@ const taskExamples = [
   { icon: Printer, text: "Document printing" },
   { icon: Truck, text: "Small deliveries" },
   { icon: Store, text: "Store errands" },
+];
+
+const safetySteps = [
+  {
+    icon: BellRing,
+    title: "Stay informed",
+    text: "Use status updates and notifications to follow each task.",
+    guidance:
+      "Check the latest status and confirm the handoff details before moving to the next step.",
+  },
+  {
+    icon: MapPin,
+    title: "Protect private locations",
+    text: "Exact task addresses are limited to the assigned participants.",
+    guidance:
+      "Share an exact pickup or delivery address only after a Runner accepts the request.",
+  },
+  {
+    icon: WalletCards,
+    title: "Settle directly",
+    text: "Review receipts and pay the agreed amount in person after meeting.",
+    guidance:
+      "Compare the receipt, approved expenses, and Runner fee before confirming direct payment.",
+  },
+];
+
+const launchStages = [
+  {
+    icon: PackageCheck,
+    title: "Private development",
+    status: "Current stage",
+    description:
+      "Core Requestor, Runner, payment, safety, and Admin workflows are being refined before public access opens.",
+  },
+  {
+    icon: UsersRound,
+    title: "Community testing",
+    status: "Next stage",
+    description:
+      "Selected testers can try realistic scenarios and help identify confusing, missing, or unsafe steps.",
+  },
+  {
+    icon: Globe2,
+    title: "Public access",
+    status: "Later",
+    description:
+      "Google access can open after community feedback, safety safeguards, and release checks are ready.",
+  },
 ];
 
 const roleExperiences = {
@@ -181,8 +232,11 @@ function HeroJourney() {
 
 export function LandingPage() {
   const [activeRole, setActiveRole] = useState("requestor");
+  const [activeSafetyIndex, setActiveSafetyIndex] = useState(0);
+  const [activeLaunchIndex, setActiveLaunchIndex] = useState(0);
   const role = roleExperiences[activeRole];
   const RoleIcon = role.icon;
+  const activeLaunchStage = launchStages[activeLaunchIndex];
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white">
@@ -459,8 +513,8 @@ export function LandingPage() {
           id="safety"
           className="scroll-mt-20 bg-brand-900 px-4 py-20 text-white sm:px-6 lg:py-24"
         >
-          <ScrollReveal className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1fr_0.9fr]">
-            <div>
+          <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1fr_0.9fr]">
+            <ScrollReveal className="landing-safety-copy">
               <span className="inline-flex items-center gap-2 rounded-full border border-brand-300/30 bg-white/10 px-3 py-1.5 text-sm font-bold text-brand-100">
                 <ShieldCheck className="h-4 w-4" />
                 Community safety
@@ -473,73 +527,213 @@ export function LandingPage() {
                 accepting, and never use ButuanGo for government transactions.
               </p>
               <Button asChild variant="secondary" className="mt-7">
-                <Link to="/safety">Read the safety reminder</Link>
+                <Link to="/safety" className="group">
+                  Read the safety reminder
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
               </Button>
-            </div>
+            </ScrollReveal>
 
-            <div className="grid gap-3">
-              {[
-                {
-                  icon: BellRing,
-                  title: "Stay informed",
-                  text: "Use status updates and notifications to follow each task.",
-                },
-                {
-                  icon: MapPin,
-                  title: "Protect private locations",
-                  text: "Exact task addresses are limited to the assigned participants.",
-                },
-                {
-                  icon: WalletCards,
-                  title: "Settle directly",
-                  text: "Review receipts and pay the agreed amount in person after meeting.",
-                },
-              ].map(({ icon: Icon, title, text }) => (
-                <div
-                  key={title}
-                  className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur-sm"
-                >
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 text-accent-200">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <h3 className="font-bold">{title}</h3>
-                    <p className="mt-1 text-sm leading-6 text-brand-100/80">
-                      {text}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollReveal>
+            <ScrollReveal className="landing-safety-list relative" delay={120}>
+              <div
+                className="absolute bottom-9 left-9 top-9 w-px bg-white/15"
+                aria-hidden="true"
+              >
+                <span
+                  className="landing-safety-progress block h-full origin-top bg-gradient-to-b from-accent-300 to-accent-500"
+                  style={{
+                    transform: `scaleY(${(activeSafetyIndex + 1) / safetySteps.length})`,
+                  }}
+                />
+              </div>
+
+              <div className="relative grid gap-3">
+                {safetySteps.map(
+                  ({ icon: Icon, title, text, guidance }, index) => {
+                    const isActive = activeSafetyIndex === index;
+
+                    return (
+                      <div
+                        key={title}
+                        className="landing-safety-item"
+                        style={{ "--safety-delay": `${index * 110}ms` }}
+                      >
+                        <button
+                          type="button"
+                          className={`landing-safety-card group relative flex w-full items-start gap-4 overflow-hidden rounded-2xl border p-4 text-left backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300 focus-visible:ring-offset-2 focus-visible:ring-offset-brand-900 ${
+                            isActive
+                              ? "is-active border-accent-300/60 bg-white/[0.14] shadow-xl shadow-slate-950/15"
+                              : "border-white/10 bg-white/[0.07] hover:border-white/25 hover:bg-white/[0.1]"
+                          }`}
+                          aria-pressed={isActive}
+                          aria-expanded={isActive}
+                          aria-controls={`safety-guidance-${index}`}
+                          onClick={() => setActiveSafetyIndex(index)}
+                        >
+                          <span className="landing-safety-icon relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 text-accent-200">
+                            <Icon className="h-5 w-5" />
+                          </span>
+                          <span className="relative z-10 min-w-0 flex-1">
+                            <span className="block font-bold">{title}</span>
+                            <span className="mt-1 block text-sm leading-6 text-brand-100/80">
+                              {text}
+                            </span>
+                            <span
+                              id={`safety-guidance-${index}`}
+                              className={`landing-safety-detail ${isActive ? "is-active" : ""}`}
+                            >
+                              <span className="overflow-hidden">
+                                <span className="mt-3 flex items-start gap-2 border-t border-white/10 pt-3 text-sm leading-6 text-white">
+                                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent-200" />
+                                  {guidance}
+                                </span>
+                              </span>
+                            </span>
+                          </span>
+                          <ChevronRight
+                            className={`landing-safety-chevron relative z-10 mt-2 h-4 w-4 shrink-0 text-brand-200 ${isActive ? "is-active" : ""}`}
+                            aria-hidden="true"
+                          />
+                        </button>
+                      </div>
+                    );
+                  },
+                )}
+              </div>
+
+              <p
+                className="mt-4 text-right text-xs font-semibold text-brand-200/80"
+                aria-live="polite"
+              >
+                Safety step {activeSafetyIndex + 1} of {safetySteps.length}
+              </p>
+            </ScrollReveal>
+          </div>
         </section>
 
         <section className="px-4 py-20 sm:px-6">
-          <ScrollReveal className="mx-auto max-w-4xl overflow-hidden rounded-3xl bg-gradient-to-r from-brand-600 to-brand-800 p-8 text-center text-white shadow-2xl shadow-brand-900/20 sm:p-12">
-            <PackageCheck className="mx-auto h-11 w-11 text-accent-200" />
-            <h2 className="mt-5 text-3xl font-black tracking-tight">
-              {isPublicAuthEnabled
-                ? "Ready to use ButuanGo your way?"
-                : "ButuanGo is being prepared for community testing."}
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl leading-7 text-brand-100">
-              {isPublicAuthEnabled
-                ? "Create one account, choose a starting workspace, and switch when your day changes."
-                : "Public Google access will appear here when the private development phase is ready for beta testers."}
-            </p>
-            {isPublicAuthEnabled && (
-              <Button
-                asChild
-                variant="secondary"
-                size="lg"
-                className="group mt-7"
+          <ScrollReveal className="landing-launch-panel relative mx-auto max-w-5xl overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 p-8 text-center text-white shadow-2xl shadow-brand-900/20 sm:p-12">
+            <span
+              className="landing-launch-orb landing-launch-orb-one absolute -left-24 top-8 h-64 w-64 rounded-full bg-accent-300/15 blur-3xl"
+              aria-hidden="true"
+            />
+            <span
+              className="landing-launch-orb landing-launch-orb-two absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-brand-200/15 blur-3xl"
+              aria-hidden="true"
+            />
+
+            <div className="relative">
+              <div className="relative mx-auto h-16 w-16" aria-hidden="true">
+                <span className="landing-launch-ring absolute inset-0 rounded-full border border-accent-200/60" />
+                <span className="landing-launch-ring landing-launch-ring-two absolute inset-0 rounded-full border border-accent-200/40" />
+                <span className="relative grid h-16 w-16 place-items-center rounded-full bg-white/10 text-accent-200 shadow-lg shadow-slate-950/15 backdrop-blur-sm">
+                  <PackageCheck className="h-8 w-8" />
+                </span>
+              </div>
+
+              <p className="mt-6 text-sm font-black uppercase tracking-[0.16em] text-accent-200">
+                Product launch status
+              </p>
+              <h2 className="mx-auto mt-3 max-w-3xl text-3xl font-black tracking-tight sm:text-4xl">
+                {isPublicAuthEnabled
+                  ? "Try the current ButuanGo development experience."
+                  : "ButuanGo is being prepared for community testing."}
+              </h2>
+              <p className="mx-auto mt-4 max-w-2xl leading-7 text-brand-100">
+                {isPublicAuthEnabled
+                  ? "Explore the current Requestor and Runner experience while the product remains in private development."
+                  : "We are refining the request, Runner, payment, and safety experience before inviting public beta testers."}
+              </p>
+
+              <div
+                className="mx-auto mt-8 h-1.5 max-w-xl overflow-hidden rounded-full bg-white/10"
+                role="progressbar"
+                aria-label="ButuanGo launch progress"
+                aria-valuemin="1"
+                aria-valuemax={launchStages.length}
+                aria-valuenow="1"
+                aria-valuetext="Private development, stage 1 of 3"
               >
-                <Link to="/login">
-                  Continue with Google
-                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </Button>
-            )}
+                <span className="landing-launch-progress block h-full w-1/3 origin-left rounded-full bg-gradient-to-r from-accent-300 to-accent-500" />
+              </div>
+
+              <div
+                className="mt-8 grid gap-3 sm:grid-cols-3"
+                aria-label="ButuanGo launch stages"
+              >
+                {launchStages.map(({ icon: Icon, title, status }, index) => {
+                  const isActive = activeLaunchIndex === index;
+
+                  return (
+                    <div
+                      key={title}
+                      className="landing-launch-stage-item"
+                      style={{ "--launch-delay": `${index * 110}ms` }}
+                    >
+                      <button
+                        type="button"
+                        className={`landing-launch-stage group flex h-full w-full items-center gap-3 rounded-2xl border p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300 focus-visible:ring-offset-2 focus-visible:ring-offset-brand-800 sm:block sm:text-center ${
+                          isActive
+                            ? "is-active border-accent-300/60 bg-white/[0.14]"
+                            : "border-white/10 bg-white/[0.06] hover:border-white/25 hover:bg-white/[0.1]"
+                        }`}
+                        aria-pressed={isActive}
+                        onClick={() => setActiveLaunchIndex(index)}
+                        onFocus={() => setActiveLaunchIndex(index)}
+                        onMouseEnter={() => setActiveLaunchIndex(index)}
+                      >
+                        <span className="landing-launch-stage-icon grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 text-accent-200 sm:mx-auto">
+                          <Icon className="h-5 w-5" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block font-bold sm:mt-3">
+                            {title}
+                          </span>
+                          <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.1em] text-brand-200">
+                            {status}
+                          </span>
+                        </span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div
+                key={activeLaunchIndex}
+                className="landing-launch-detail mx-auto mt-5 max-w-2xl rounded-2xl border border-white/10 bg-slate-950/15 px-5 py-4 text-sm leading-6 text-brand-50 backdrop-blur-sm"
+                aria-live="polite"
+              >
+                <span className="font-bold text-accent-200">
+                  {activeLaunchStage.status}:
+                </span>{" "}
+                {activeLaunchStage.description}
+              </div>
+
+              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <Button asChild variant="secondary" size="lg" className="group">
+                  {isPublicAuthEnabled ? (
+                    <Link to="/login">
+                      Continue with Google
+                      <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                  ) : (
+                    <a href="#how-it-works">
+                      Explore how ButuanGo works
+                      <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                    </a>
+                  )}
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="border-white/25 bg-white/[0.06] text-white hover:bg-white/[0.12] hover:text-white"
+                >
+                  <Link to="/safety">Read the safety guide</Link>
+                </Button>
+              </div>
+            </div>
           </ScrollReveal>
         </section>
       </main>

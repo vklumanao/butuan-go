@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Activity,
@@ -33,6 +33,10 @@ const auditLabels = {
   ACCOUNT_REPORT_RESOLVED: "Safety report resolved",
   ACCOUNT_ANONYMIZED: "Account anonymized",
 };
+
+const AdminMonthlyAnalytics = lazy(
+  () => import("@/components/admin/AdminMonthlyAnalytics"),
+);
 
 function StatCard({ label, value, helper, icon: Icon, to, tone }) {
   const tones = {
@@ -161,6 +165,16 @@ export function AdminDashboardPage() {
               tone="red"
             />
           </section>
+
+          <Suspense
+            fallback={
+              <div className="mt-8">
+                <AdminLoadingState message="Loading analytics interface..." />
+              </div>
+            }
+          >
+            <AdminMonthlyAnalytics />
+          </Suspense>
 
           <div className="mt-8 grid gap-6 xl:grid-cols-2">
             <Card>
