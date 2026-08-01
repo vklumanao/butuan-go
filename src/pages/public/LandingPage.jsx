@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -234,11 +234,51 @@ export function LandingPage() {
   const [activeRole, setActiveRole] = useState("requestor");
   const [activeSafetyIndex, setActiveSafetyIndex] = useState(0);
   const [activeLaunchIndex, setActiveLaunchIndex] = useState(0);
+  const safetyTrackRef = useRef(null);
+  const safetyIconRefs = useRef([]);
   const role = roleExperiences[activeRole];
   const RoleIcon = role.icon;
   const activeLaunchStage = launchStages[activeLaunchIndex];
   const safetyActiveY =
     24 + (activeSafetyIndex / Math.max(safetySteps.length - 1, 1)) * 52;
+
+  useLayoutEffect(() => {
+    const track = safetyTrackRef.current;
+    const icons = safetyIconRefs.current.slice(0, safetySteps.length);
+    if (!track || icons.some((icon) => !icon)) return undefined;
+
+    const updateTrack = () => {
+      const trackRect = track.getBoundingClientRect();
+      const centers = icons.map((icon) => {
+        const iconRect = icon.getBoundingClientRect();
+        return iconRect.top - trackRect.top + iconRect.height / 2;
+      });
+      const firstCenter = centers[0];
+      const lastCenter = centers[centers.length - 1];
+      const activeCenter = centers[activeSafetyIndex];
+
+      track.style.setProperty("--safety-track-top", `${firstCenter}px`);
+      track.style.setProperty(
+        "--safety-track-height",
+        `${Math.max(lastCenter - firstCenter, 0)}px`,
+      );
+      track.style.setProperty(
+        "--safety-progress-height",
+        `${Math.max(activeCenter - firstCenter, 0)}px`,
+      );
+    };
+
+    updateTrack();
+    const resizeObserver = new ResizeObserver(updateTrack);
+    resizeObserver.observe(track);
+    icons.forEach((icon) => resizeObserver.observe(icon));
+    window.addEventListener("resize", updateTrack);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateTrack);
+    };
+  }, [activeSafetyIndex]);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white">
@@ -553,70 +593,72 @@ export function LandingPage() {
             </ScrollReveal>
 
             <ScrollReveal className="landing-safety-list relative" delay={120}>
-              <div
-                className="absolute bottom-9 left-9 top-9 w-px bg-white/15"
-                aria-hidden="true"
-              >
-                <span
-                  className="landing-safety-progress block h-full origin-top bg-gradient-to-b from-accent-300 to-accent-500"
-                  style={{
-                    transform: `scaleY(${(activeSafetyIndex + 1) / safetySteps.length})`,
-                  }}
-                />
-              </div>
+              <div ref={safetyTrackRef} className="relative">
+                <div
+                  className="landing-safety-track absolute left-9 w-px bg-white/15"
+                  aria-hidden="true"
+                >
+                  <span className="landing-safety-progress block w-full bg-gradient-to-b from-accent-300 to-accent-500" />
+                </div>
 
-              <div className="relative grid gap-3">
-                {safetySteps.map(
-                  ({ icon: Icon, title, text, guidance }, index) => {
-                    const isActive = activeSafetyIndex === index;
+                <div className="relative grid gap-3">
+                  {safetySteps.map(
+                    ({ icon: Icon, title, text, guidance }, index) => {
+                      const isActive = activeSafetyIndex === index;
 
-                    return (
-                      <div
-                        key={title}
-                        className="landing-safety-item"
-                        style={{ "--safety-delay": `${index * 110}ms` }}
-                      >
-                        <button
-                          type="button"
-                          className={`landing-safety-card group relative flex w-full items-start gap-4 overflow-hidden rounded-2xl border p-4 text-left backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300 focus-visible:ring-offset-2 focus-visible:ring-offset-brand-900 ${
-                            isActive
-                              ? "is-active border-accent-300/60 bg-white/[0.14] shadow-xl shadow-slate-950/15"
-                              : "border-white/10 bg-white/[0.07] hover:border-white/25 hover:bg-white/[0.1]"
-                          }`}
-                          aria-pressed={isActive}
-                          aria-expanded={isActive}
-                          aria-controls={`safety-guidance-${index}`}
-                          onClick={() => setActiveSafetyIndex(index)}
+                      return (
+                        <div
+                          key={title}
+                          className="landing-safety-item"
+                          style={{ "--safety-delay": `${index * 110}ms` }}
                         >
-                          <span className="landing-safety-icon relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 text-accent-200">
-                            <Icon className="h-5 w-5" />
-                          </span>
-                          <span className="relative z-10 min-w-0 flex-1">
-                            <span className="block font-bold">{title}</span>
-                            <span className="mt-1 block text-sm leading-6 text-brand-100/80">
-                              {text}
-                            </span>
+                          <button
+                            type="button"
+                            className={`landing-safety-card group relative flex w-full items-start gap-4 overflow-hidden rounded-2xl border p-4 text-left backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300 focus-visible:ring-offset-2 focus-visible:ring-offset-brand-900 ${
+                              isActive
+                                ? "is-active border-accent-300/60 bg-white/[0.14] shadow-xl shadow-slate-950/15"
+                                : "border-white/10 bg-white/[0.07] hover:border-white/25 hover:bg-white/[0.1]"
+                            }`}
+                            aria-pressed={isActive}
+                            aria-expanded={isActive}
+                            aria-controls={`safety-guidance-${index}`}
+                            onClick={() => setActiveSafetyIndex(index)}
+                          >
                             <span
-                              id={`safety-guidance-${index}`}
-                              className={`landing-safety-detail ${isActive ? "is-active" : ""}`}
+                              ref={(element) => {
+                                safetyIconRefs.current[index] = element;
+                              }}
+                              className="landing-safety-icon relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 text-accent-200"
                             >
-                              <span className="overflow-hidden">
-                                <span className="mt-3 flex items-start gap-2 border-t border-white/10 pt-3 text-sm leading-6 text-white">
-                                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent-200" />
-                                  {guidance}
+                              <Icon className="h-5 w-5" />
+                            </span>
+                            <span className="relative z-10 min-w-0 flex-1">
+                              <span className="block font-bold">{title}</span>
+                              <span className="mt-1 block text-sm leading-6 text-brand-100/80">
+                                {text}
+                              </span>
+                              <span
+                                id={`safety-guidance-${index}`}
+                                className={`landing-safety-detail ${isActive ? "is-active" : ""}`}
+                              >
+                                <span className="overflow-hidden">
+                                  <span className="mt-3 flex items-start gap-2 border-t border-white/10 pt-3 text-sm leading-6 text-white">
+                                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent-200" />
+                                    {guidance}
+                                  </span>
                                 </span>
                               </span>
                             </span>
-                          </span>
-                          <ChevronRight
-                            className={`landing-safety-chevron relative z-10 mt-2 h-4 w-4 shrink-0 text-brand-200 ${isActive ? "is-active" : ""}`}
-                            aria-hidden="true"
-                          />
-                        </button>
-                      </div>
-                    );
-                  },
-                )}
+                            <ChevronRight
+                              className={`landing-safety-chevron relative z-10 mt-2 h-4 w-4 shrink-0 text-brand-200 ${isActive ? "is-active" : ""}`}
+                              aria-hidden="true"
+                            />
+                          </button>
+                        </div>
+                      );
+                    },
+                  )}
+                </div>
               </div>
 
               <p

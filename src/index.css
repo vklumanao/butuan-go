@@ -359,8 +359,15 @@ textarea {
   animation-delay: var(--safety-delay, 0ms);
 }
 
+.landing-safety-track {
+  height: var(--safety-track-height, calc(100% - 4.5rem));
+  top: var(--safety-track-top, 2.25rem);
+}
+
 .landing-safety-progress {
-  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  height: var(--safety-progress-height, 0);
+  box-shadow: 0 0 12px rgb(94 234 212 / 0.38);
+  transition: height 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .landing-safety-card {
