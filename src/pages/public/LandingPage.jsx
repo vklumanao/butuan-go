@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BellRing,
   CheckCircle2,
+  ChevronRight,
   CircleCheckBig,
   ClipboardList,
   HandHeart,
@@ -61,6 +62,30 @@ const taskExamples = [
   { icon: Printer, text: "Document printing" },
   { icon: Truck, text: "Small deliveries" },
   { icon: Store, text: "Store errands" },
+];
+
+const safetySteps = [
+  {
+    icon: BellRing,
+    title: "Stay informed",
+    text: "Use status updates and notifications to follow each task.",
+    guidance:
+      "Check the latest status and confirm the handoff details before moving to the next step.",
+  },
+  {
+    icon: MapPin,
+    title: "Protect private locations",
+    text: "Exact task addresses are limited to the assigned participants.",
+    guidance:
+      "Share an exact pickup or delivery address only after a Runner accepts the request.",
+  },
+  {
+    icon: WalletCards,
+    title: "Settle directly",
+    text: "Review receipts and pay the agreed amount in person after meeting.",
+    guidance:
+      "Compare the receipt, approved expenses, and Runner fee before confirming direct payment.",
+  },
 ];
 
 const roleExperiences = {
@@ -181,6 +206,7 @@ function HeroJourney() {
 
 export function LandingPage() {
   const [activeRole, setActiveRole] = useState("requestor");
+  const [activeSafetyIndex, setActiveSafetyIndex] = useState(0);
   const role = roleExperiences[activeRole];
   const RoleIcon = role.icon;
 
@@ -459,8 +485,8 @@ export function LandingPage() {
           id="safety"
           className="scroll-mt-20 bg-brand-900 px-4 py-20 text-white sm:px-6 lg:py-24"
         >
-          <ScrollReveal className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1fr_0.9fr]">
-            <div>
+          <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1fr_0.9fr]">
+            <ScrollReveal className="landing-safety-copy">
               <span className="inline-flex items-center gap-2 rounded-full border border-brand-300/30 bg-white/10 px-3 py-1.5 text-sm font-bold text-brand-100">
                 <ShieldCheck className="h-4 w-4" />
                 Community safety
@@ -473,45 +499,91 @@ export function LandingPage() {
                 accepting, and never use ButuanGo for government transactions.
               </p>
               <Button asChild variant="secondary" className="mt-7">
-                <Link to="/safety">Read the safety reminder</Link>
+                <Link to="/safety" className="group">
+                  Read the safety reminder
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
               </Button>
-            </div>
+            </ScrollReveal>
 
-            <div className="grid gap-3">
-              {[
-                {
-                  icon: BellRing,
-                  title: "Stay informed",
-                  text: "Use status updates and notifications to follow each task.",
-                },
-                {
-                  icon: MapPin,
-                  title: "Protect private locations",
-                  text: "Exact task addresses are limited to the assigned participants.",
-                },
-                {
-                  icon: WalletCards,
-                  title: "Settle directly",
-                  text: "Review receipts and pay the agreed amount in person after meeting.",
-                },
-              ].map(({ icon: Icon, title, text }) => (
-                <div
-                  key={title}
-                  className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur-sm"
-                >
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 text-accent-200">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <h3 className="font-bold">{title}</h3>
-                    <p className="mt-1 text-sm leading-6 text-brand-100/80">
-                      {text}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollReveal>
+            <ScrollReveal
+              className="landing-safety-list relative"
+              delay={120}
+            >
+              <div
+                className="absolute bottom-9 left-9 top-9 w-px bg-white/15"
+                aria-hidden="true"
+              >
+                <span
+                  className="landing-safety-progress block h-full origin-top bg-gradient-to-b from-accent-300 to-accent-500"
+                  style={{
+                    transform: `scaleY(${(activeSafetyIndex + 1) / safetySteps.length})`,
+                  }}
+                />
+              </div>
+
+              <div className="relative grid gap-3">
+                {safetySteps.map(
+                  ({ icon: Icon, title, text, guidance }, index) => {
+                    const isActive = activeSafetyIndex === index;
+
+                    return (
+                      <div
+                        key={title}
+                        className="landing-safety-item"
+                        style={{ "--safety-delay": `${index * 110}ms` }}
+                      >
+                        <button
+                          type="button"
+                          className={`landing-safety-card group relative flex w-full items-start gap-4 overflow-hidden rounded-2xl border p-4 text-left backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300 focus-visible:ring-offset-2 focus-visible:ring-offset-brand-900 ${
+                            isActive
+                              ? "is-active border-accent-300/60 bg-white/[0.14] shadow-xl shadow-slate-950/15"
+                              : "border-white/10 bg-white/[0.07] hover:border-white/25 hover:bg-white/[0.1]"
+                          }`}
+                          aria-pressed={isActive}
+                          aria-expanded={isActive}
+                          aria-controls={`safety-guidance-${index}`}
+                          onClick={() => setActiveSafetyIndex(index)}
+                        >
+                          <span className="landing-safety-icon relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 text-accent-200">
+                            <Icon className="h-5 w-5" />
+                          </span>
+                          <span className="relative z-10 min-w-0 flex-1">
+                            <span className="block font-bold">{title}</span>
+                            <span className="mt-1 block text-sm leading-6 text-brand-100/80">
+                              {text}
+                            </span>
+                            <span
+                              id={`safety-guidance-${index}`}
+                              className={`landing-safety-detail ${isActive ? "is-active" : ""}`}
+                            >
+                              <span className="overflow-hidden">
+                                <span className="mt-3 flex items-start gap-2 border-t border-white/10 pt-3 text-sm leading-6 text-white">
+                                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent-200" />
+                                  {guidance}
+                                </span>
+                              </span>
+                            </span>
+                          </span>
+                          <ChevronRight
+                            className={`landing-safety-chevron relative z-10 mt-2 h-4 w-4 shrink-0 text-brand-200 ${isActive ? "is-active" : ""}`}
+                            aria-hidden="true"
+                          />
+                        </button>
+                      </div>
+                    );
+                  },
+                )}
+              </div>
+
+              <p
+                className="mt-4 text-right text-xs font-semibold text-brand-200/80"
+                aria-live="polite"
+              >
+                Safety step {activeSafetyIndex + 1} of {safetySteps.length}
+              </p>
+            </ScrollReveal>
+          </div>
         </section>
 
         <section className="px-4 py-20 sm:px-6">

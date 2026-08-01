@@ -199,6 +199,92 @@ textarea {
   animation: landing-panel-in 420ms ease both;
 }
 
+.scroll-reveal.landing-safety-copy {
+  transform: translateX(-24px);
+}
+
+.scroll-reveal.landing-safety-copy[data-visible="true"] {
+  transform: translateX(0);
+}
+
+.landing-safety-item {
+  opacity: 0;
+  transform: translateX(28px);
+}
+
+.scroll-reveal[data-visible="true"] .landing-safety-item {
+  animation: landing-safety-card-in 520ms ease forwards;
+  animation-delay: var(--safety-delay, 0ms);
+}
+
+.landing-safety-progress {
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-safety-card {
+  transition:
+    transform 280ms ease,
+    border-color 280ms ease,
+    background-color 280ms ease,
+    box-shadow 280ms ease;
+}
+
+.landing-safety-card::before {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 12% 25%,
+    rgb(148 251 234 / 0.12),
+    transparent 42%
+  );
+  content: "";
+  opacity: 0;
+  transition: opacity 280ms ease;
+}
+
+.landing-safety-card:hover {
+  transform: translateX(-4px);
+}
+
+.landing-safety-card.is-active,
+.landing-safety-card.is-active:hover {
+  transform: translateX(-6px);
+}
+
+.landing-safety-card.is-active::before {
+  opacity: 1;
+}
+
+.landing-safety-icon,
+.landing-safety-chevron {
+  transition:
+    transform 280ms ease,
+    background-color 280ms ease;
+}
+
+.landing-safety-card.is-active .landing-safety-icon {
+  background-color: rgb(255 255 255 / 0.18);
+  transform: rotate(-4deg) scale(1.08);
+}
+
+.landing-safety-chevron.is-active {
+  transform: rotate(90deg);
+}
+
+.landing-safety-detail {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 320ms ease,
+    opacity 240ms ease;
+}
+
+.landing-safety-detail.is-active {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
 .butuango-runner-marker {
   position: relative;
   width: 20px;
@@ -386,6 +472,13 @@ textarea {
   }
 }
 
+@keyframes landing-safety-card-in {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @keyframes butuango-map-pulse {
   from {
     opacity: 0.8;
@@ -416,19 +509,38 @@ textarea {
   .landing-marquee,
   .landing-step-float,
   .scroll-reveal[data-visible="true"] .landing-progress-fill,
-  .landing-role-panel {
+  .landing-role-panel,
+  .scroll-reveal[data-visible="true"] .landing-safety-item {
     animation: none;
     opacity: 1;
     transform: none;
   }
 
+  .scroll-reveal.landing-safety-copy,
+  .scroll-reveal.landing-safety-copy[data-visible="true"] {
+    transform: none;
+  }
+
   .landing-step-card,
-  .landing-step-icon {
+  .landing-step-icon,
+  .landing-safety-progress,
+  .landing-safety-card,
+  .landing-safety-card::before,
+  .landing-safety-icon,
+  .landing-safety-chevron,
+  .landing-safety-detail {
     transition: none;
   }
 
   .landing-step-float:hover .landing-step-card,
   .landing-step-float:hover .landing-step-icon {
+    transform: none;
+  }
+
+  .landing-safety-card:hover,
+  .landing-safety-card.is-active,
+  .landing-safety-card.is-active:hover,
+  .landing-safety-card.is-active .landing-safety-icon {
     transform: none;
   }
 
