@@ -4,11 +4,13 @@ import {
   ArrowLeftRight,
   CheckCircle2,
   LoaderCircle,
+  LockKeyhole,
   MapPin,
   ShieldCheck,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { isPublicAuthEnabled } from "@/lib/appConfig";
 import { devLog } from "@/lib/errors";
 import { isDemoMode, isSupabaseConfigured } from "@/lib/supabase";
 import { Brand } from "@/components/layout/Brand";
@@ -100,9 +102,15 @@ export function LoginPage() {
                 <CheckCircle2 className="h-5 w-5" />
               </span>
               <div>
-                <p className="font-bold">New and returning users</p>
+                <p className="font-bold">
+                  {isPublicAuthEnabled
+                    ? "New and returning users"
+                    : "Private development access"}
+                </p>
                 <p className="mt-0.5 text-sm text-brand-100/80">
-                  The same Google button creates or opens your account.
+                  {isPublicAuthEnabled
+                    ? "The same Google button creates or opens your account."
+                    : "Public Google access is temporarily unavailable."}
                 </p>
               </div>
             </li>
@@ -151,63 +159,105 @@ export function LoginPage() {
           </Link>
 
           <p className="text-sm font-bold uppercase tracking-[0.14em] text-brand-700">
-            Get started or continue
+            {isPublicAuthEnabled ? "Get started or continue" : "Private development"}
           </p>
           <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-            Continue to Butuan<span className="text-brand-600">Go</span>
+            {isPublicAuthEnabled ? (
+              <>
+                Continue to Butuan<span className="text-brand-600">Go</span>
+              </>
+            ) : (
+              "Public access is not open yet"
+            )}
           </h2>
           <p className="mt-3 leading-6 text-slate-600">
-            Use your Google account. New users complete a short profile setup
-            before entering the marketplace.
+            {isPublicAuthEnabled
+              ? "Use your Google account. New users complete a short profile setup before entering the marketplace."
+              : "ButuanGo is currently being prepared and validated before public beta testing begins."}
           </p>
 
           <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/50 sm:p-7">
-            {googleUnavailable && (
+            {isPublicAuthEnabled && googleUnavailable && (
               <div className="mb-5">
                 <ConfigurationNotice />
               </div>
             )}
-            {formError && (
+            {isPublicAuthEnabled && formError && (
               <Alert variant="destructive" className="mb-5">
                 {formError}
               </Alert>
             )}
 
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              className="w-full border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
-              disabled={googleUnavailable || signingIn}
-              onClick={handleGoogleSignIn}
-            >
-              {signingIn ? (
-                <LoaderCircle className="h-5 w-5 animate-spin" />
-              ) : (
-                <GoogleIcon />
-              )}
-              {signingIn ? "Opening Google…" : "Continue with Google"}
-            </Button>
+            {isPublicAuthEnabled ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  className="w-full border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
+                  disabled={googleUnavailable || signingIn}
+                  onClick={handleGoogleSignIn}
+                >
+                  {signingIn ? (
+                    <LoaderCircle className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <GoogleIcon />
+                  )}
+                  {signingIn ? "Opening Google…" : "Continue with Google"}
+                </Button>
 
-            <p className="mt-5 text-center text-xs leading-5 text-slate-500">
-              By continuing, you will be asked to accept the{" "}
-              <Link to="/terms" className="font-semibold text-brand-700">
-                Terms
-              </Link>
-              ,{" "}
-              <Link to="/privacy" className="font-semibold text-brand-700">
-                Privacy Notice
-              </Link>
-              , and{" "}
-              <Link to="/safety" className="font-semibold text-brand-700">
-                Safety guidance
-              </Link>{" "}
-              during first-time setup.
-            </p>
+                <p className="mt-5 text-center text-xs leading-5 text-slate-500">
+                  By continuing, you will be asked to accept the{" "}
+                  <Link to="/terms" className="font-semibold text-brand-700">
+                    Terms
+                  </Link>
+                  ,{" "}
+                  <Link to="/privacy" className="font-semibold text-brand-700">
+                    Privacy Notice
+                  </Link>
+                  , and{" "}
+                  <Link to="/safety" className="font-semibold text-brand-700">
+                    Safety guidance
+                  </Link>{" "}
+                  during first-time setup.
+                </p>
+              </>
+            ) : (
+              <>
+                <Alert className="border-amber-200 bg-amber-50 text-amber-950">
+                  <LockKeyhole className="h-5 w-5" />
+                  <div>
+                    <p className="font-bold">Google access is hidden</p>
+                    <p className="mt-1 text-sm leading-6">
+                      Account access will be opened when ButuanGo is ready to
+                      invite public beta testers.
+                    </p>
+                  </div>
+                </Alert>
+
+                <p className="mt-5 text-center text-xs leading-5 text-slate-500">
+                  You can review the current{" "}
+                  <Link to="/terms" className="font-semibold text-brand-700">
+                    Terms
+                  </Link>
+                  ,{" "}
+                  <Link to="/privacy" className="font-semibold text-brand-700">
+                    Privacy Notice
+                  </Link>
+                  , and{" "}
+                  <Link to="/safety" className="font-semibold text-brand-700">
+                    Safety guidance
+                  </Link>{" "}
+                  while public access is closed.
+                </p>
+              </>
+            )}
           </div>
 
           <p className="mt-7 text-center text-sm leading-6 text-slate-500">
-            ButuanGo does not receive or store your Google password.
+            {isPublicAuthEnabled
+              ? "ButuanGo does not receive or store your Google password."
+              : "No public account-access button is available in this production release."}
           </p>
         </div>
       </section>

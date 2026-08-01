@@ -34,6 +34,12 @@ This runs ESLint followed by the production Vite build. Database changes still
 require their numbered Supabase migration and matching verification SQL. This
 project intentionally does not use GitHub Actions for these checks.
 
+Public Google entry points are controlled by the Vite build mode: development
+mode enables them and production mode disables them. The optional
+`VITE_PUBLIC_AUTH_ENABLED` variable can explicitly override that default. This
+keeps the Google flow available during development without exposing account
+creation in the deployed production app.
+
 ## Prerequisites
 
 - Node.js 20.19+ or 22.12+ (the current Vite requirement)
@@ -277,6 +283,12 @@ with:
 ```bash
 npm run deploy:firebase
 ```
+
+The deployment command stops unless the current branch is a clean `main`, then
+runs the production lint and build checks before publishing. The production
+build currently hides public Google access. Use `npm run dev` for local
+development or `npm run check:development` to verify the development build with
+Google access enabled.
 
 The deployed origin and `/auth/callback` URL must remain registered in the
 Google OAuth client and Supabase Auth URL configuration.

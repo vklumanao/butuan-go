@@ -8,6 +8,7 @@ import {
   ClipboardList,
   HandHeart,
   Handshake,
+  LockKeyhole,
   MapPin,
   PackageCheck,
   Printer,
@@ -24,6 +25,7 @@ import { PublicHeader } from "@/components/layout/PublicHeader";
 import { ScrollReveal } from "@/components/common/ScrollReveal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { isPublicAuthEnabled } from "@/lib/appConfig";
 
 const workflowSteps = [
   {
@@ -210,12 +212,25 @@ export function LandingPage() {
                 someone complete one—all from a single account.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                <Button size="lg" asChild className="group sm:w-auto">
-                  <Link to="/login">
-                    Continue with Google
-                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                  </Link>
-                </Button>
+                {isPublicAuthEnabled ? (
+                  <Button size="lg" asChild className="group sm:w-auto">
+                    <Link to="/login">
+                      Continue with Google
+                      <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                  </Button>
+                ) : (
+                  <div className="flex max-w-md items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-950">
+                    <LockKeyhole className="mt-0.5 h-5 w-5 shrink-0" />
+                    <div>
+                      <p className="font-bold">Public access is not open yet</p>
+                      <p className="mt-1 leading-5 text-amber-900">
+                        ButuanGo is currently in private development while we
+                        validate the experience with the community.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <Button size="lg" variant="outline" asChild>
                   <a href="#how-it-works">See how it works</a>
                 </Button>
@@ -426,12 +441,14 @@ export function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Button asChild className="group mt-7">
-                    <Link to="/login">
-                      Continue with Google
-                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </Link>
-                  </Button>
+                  {isPublicAuthEnabled && (
+                    <Button asChild className="group mt-7">
+                      <Link to="/login">
+                        Continue with Google
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               </div>
             </ScrollReveal>
@@ -501,23 +518,28 @@ export function LandingPage() {
           <ScrollReveal className="mx-auto max-w-4xl overflow-hidden rounded-3xl bg-gradient-to-r from-brand-600 to-brand-800 p-8 text-center text-white shadow-2xl shadow-brand-900/20 sm:p-12">
             <PackageCheck className="mx-auto h-11 w-11 text-accent-200" />
             <h2 className="mt-5 text-3xl font-black tracking-tight">
-              Ready to use ButuanGo your way?
+              {isPublicAuthEnabled
+                ? "Ready to use ButuanGo your way?"
+                : "ButuanGo is being prepared for community testing."}
             </h2>
             <p className="mx-auto mt-4 max-w-2xl leading-7 text-brand-100">
-              Create one account, choose a starting workspace, and switch when
-              your day changes.
+              {isPublicAuthEnabled
+                ? "Create one account, choose a starting workspace, and switch when your day changes."
+                : "Public Google access will appear here when the private development phase is ready for beta testers."}
             </p>
-            <Button
-              asChild
-              variant="secondary"
-              size="lg"
-              className="group mt-7"
-            >
-              <Link to="/login">
-                Continue with Google
-                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Button>
+            {isPublicAuthEnabled && (
+              <Button
+                asChild
+                variant="secondary"
+                size="lg"
+                className="group mt-7"
+              >
+                <Link to="/login">
+                  Continue with Google
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </Button>
+            )}
           </ScrollReveal>
         </section>
       </main>
