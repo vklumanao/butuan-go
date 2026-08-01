@@ -285,6 +285,84 @@ textarea {
   opacity: 1;
 }
 
+.landing-launch-panel::before {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 38px 38px;
+  content: "";
+  mask-image: linear-gradient(to bottom, black, transparent 88%);
+}
+
+.landing-launch-orb {
+  animation: landing-launch-orb 8s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.landing-launch-orb-two {
+  animation-delay: -4s;
+}
+
+.landing-launch-ring {
+  animation: landing-launch-ring 2.8s ease-out infinite;
+}
+
+.landing-launch-ring-two {
+  animation-delay: 1.4s;
+}
+
+.landing-launch-progress {
+  transform: scaleX(0);
+}
+
+.scroll-reveal[data-visible="true"] .landing-launch-progress {
+  animation: landing-launch-progress 900ms ease 280ms forwards;
+}
+
+.landing-launch-stage-item {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.scroll-reveal[data-visible="true"] .landing-launch-stage-item {
+  animation: landing-launch-stage-in 480ms ease forwards;
+  animation-delay: calc(360ms + var(--launch-delay, 0ms));
+}
+
+.landing-launch-stage {
+  transition:
+    transform 260ms ease,
+    border-color 260ms ease,
+    background-color 260ms ease,
+    box-shadow 260ms ease;
+}
+
+.landing-launch-stage:hover,
+.landing-launch-stage.is-active {
+  transform: translateY(-4px);
+}
+
+.landing-launch-stage.is-active {
+  box-shadow: 0 14px 30px rgb(3 30 28 / 0.2);
+}
+
+.landing-launch-stage-icon {
+  transition:
+    transform 260ms ease,
+    background-color 260ms ease;
+}
+
+.landing-launch-stage.is-active .landing-launch-stage-icon {
+  background-color: rgb(255 255 255 / 0.18);
+  transform: rotate(-4deg) scale(1.08);
+}
+
+.landing-launch-detail {
+  animation: landing-launch-detail-in 300ms ease both;
+}
+
 .butuango-runner-marker {
   position: relative;
   width: 20px;
@@ -479,6 +557,51 @@ textarea {
   }
 }
 
+@keyframes landing-launch-orb {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(18px, -10px, 0) scale(1.08);
+  }
+}
+
+@keyframes landing-launch-ring {
+  0% {
+    opacity: 0.75;
+    transform: scale(0.82);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.55);
+  }
+}
+
+@keyframes landing-launch-progress {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes landing-launch-stage-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-launch-detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes butuango-map-pulse {
   from {
     opacity: 0.8;
@@ -510,7 +633,12 @@ textarea {
   .landing-step-float,
   .scroll-reveal[data-visible="true"] .landing-progress-fill,
   .landing-role-panel,
-  .scroll-reveal[data-visible="true"] .landing-safety-item {
+  .scroll-reveal[data-visible="true"] .landing-safety-item,
+  .landing-launch-orb,
+  .landing-launch-ring,
+  .scroll-reveal[data-visible="true"] .landing-launch-progress,
+  .scroll-reveal[data-visible="true"] .landing-launch-stage-item,
+  .landing-launch-detail {
     animation: none;
     opacity: 1;
     transform: none;
@@ -528,7 +656,9 @@ textarea {
   .landing-safety-card::before,
   .landing-safety-icon,
   .landing-safety-chevron,
-  .landing-safety-detail {
+  .landing-safety-detail,
+  .landing-launch-stage,
+  .landing-launch-stage-icon {
     transition: none;
   }
 
@@ -540,7 +670,10 @@ textarea {
   .landing-safety-card:hover,
   .landing-safety-card.is-active,
   .landing-safety-card.is-active:hover,
-  .landing-safety-card.is-active .landing-safety-icon {
+  .landing-safety-card.is-active .landing-safety-icon,
+  .landing-launch-stage:hover,
+  .landing-launch-stage.is-active,
+  .landing-launch-stage.is-active .landing-launch-stage-icon {
     transform: none;
   }
 
