@@ -25,6 +25,7 @@ and open only the files needed for the current change.
 | `src/pages/profile` | Shared account profile screen |
 | `src/pages/public` | Landing, legal, safety, unauthorized, and not-found pages |
 | `src/components/requests` | Shared request workflow UI |
+| `src/components/feedback` | Authenticated feedback submission dialog |
 | `src/components/addresses` | Private reusable address management |
 | `src/components/layout` | Navigation, notices, brands, and legal layouts |
 | `src/components/ui` | Reusable interface primitives |

@@ -163,3 +163,33 @@ export async function completeAdminAccountAnonymization({
   );
   return { data: normalizeRpcRow(data), error };
 }
+
+export async function listAdminUserFeedback({
+  status = "NEW",
+  category = "ALL",
+  limit = 50,
+  offset = 0,
+} = {}) {
+  return supabase.rpc("admin_list_user_feedback", {
+    p_status: status,
+    p_category: category,
+    p_limit: limit,
+    p_offset: offset,
+  });
+}
+
+export async function updateAdminUserFeedback({
+  feedbackId,
+  status,
+  adminNote,
+}) {
+  const { data, error } = await supabase.rpc(
+    "admin_update_user_feedback",
+    {
+      p_feedback_id: feedbackId,
+      p_status: status,
+      p_admin_note: adminNote.trim(),
+    },
+  );
+  return { data: normalizeRpcRow(data), error };
+}

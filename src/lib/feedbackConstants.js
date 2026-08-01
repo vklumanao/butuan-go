@@ -1,0 +1,29 @@
+export const FEEDBACK_CATEGORIES = Object.freeze({
+  BUG: "BUG",
+  SUGGESTION: "SUGGESTION",
+  CONFUSING_EXPERIENCE: "CONFUSING_EXPERIENCE",
+  OTHER: "OTHER",
+});
+
+export const FEEDBACK_CATEGORY_LABELS = Object.freeze({
+  [FEEDBACK_CATEGORIES.BUG]: "Something is not working",
+  [FEEDBACK_CATEGORIES.SUGGESTION]: "Suggestion or new idea",
+  [FEEDBACK_CATEGORIES.CONFUSING_EXPERIENCE]: "Something is confusing",
+  [FEEDBACK_CATEGORIES.OTHER]: "Other feedback",
+});
+
+export const FEEDBACK_STATUSES = Object.freeze({
+  NEW: "NEW",
+  REVIEWED: "REVIEWED",
+  PLANNED: "PLANNED",
+  RESOLVED: "RESOLVED",
+  DISMISSED: "DISMISSED",
+});
+
+export const FEEDBACK_STATUS_LABELS = Object.freeze({
+  [FEEDBACK_STATUSES.NEW]: "New",
+  [FEEDBACK_STATUSES.REVIEWED]: "Reviewed",
+  [FEEDBACK_STATUSES.PLANNED]: "Planned",
+  [FEEDBACK_STATUSES.RESOLVED]: "Resolved",
+  [FEEDBACK_STATUSES.DISMISSED]: "Dismissed",
+});
