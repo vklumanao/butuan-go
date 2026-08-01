@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  Building2,
+  House,
   LoaderCircle,
   MapPin,
   MapPinned,
@@ -57,6 +59,19 @@ function addressDefaults(profile) {
   };
 }
 
+const LOCATION_LABELS = [
+  { value: "Home", icon: House },
+  { value: "Work", icon: Building2 },
+  { value: "Custom", icon: MapPin },
+];
+
+function getLabelType(label) {
+  const normalizedLabel = label?.trim().toLowerCase();
+  if (normalizedLabel === "home") return "Home";
+  if (normalizedLabel === "work") return "Work";
+  return "Custom";
+}
+
 export function SavedAddressManager({ profile }) {
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,10 +82,12 @@ export function SavedAddressManager({ profile }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [defaultingId, setDefaultingId] = useState(null);
+  const [labelType, setLabelType] = useState("Home");
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(savedAddressSchema),
@@ -105,6 +122,7 @@ export function SavedAddressManager({ profile }) {
 
   function openNewAddress() {
     setEditingAddress(null);
+    setLabelType("Home");
     setFormError("");
     reset({ ...addressDefaults(profile), isDefault: addresses.length === 0 });
     setEditorOpen(true);
@@ -112,17 +130,26 @@ export function SavedAddressManager({ profile }) {
 
   function openEditAddress(address) {
     setEditingAddress(address);
+    setLabelType(getLabelType(address.label));
     setFormError("");
     reset({
       label: address.label,
-      recipientName: address.recipient_name,
-      phoneNumber: address.phone_number,
+      recipientName: address.recipient_name || "",
+      phoneNumber: address.phone_number || "",
       fullAddress: address.full_address,
       landmark: address.landmark || "",
       instructions: address.instructions || "",
       isDefault: address.is_default,
     });
     setEditorOpen(true);
+  }
+
+  function chooseLabelType(nextLabelType) {
+    setLabelType(nextLabelType);
+    setValue("label", nextLabelType === "Custom" ? "" : nextLabelType, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   }
 
   async function onSave(values) {
@@ -246,19 +273,28 @@ export function SavedAddressManager({ profile }) {
                   </div>
                   {address.is_default && <Badge>Default</Badge>}
                 </div>
-                <p className="mt-4 font-semibold text-slate-800">
-                  {address.recipient_name}
-                </p>
-                <p className="mt-1 flex items-center gap-2 text-sm text-slate-600">
-                  <Phone className="h-4 w-4 shrink-0" />
-                  {address.phone_number}
-                </p>
+                {address.recipient_name && (
+                  <p className="mt-4 font-semibold text-slate-800">
+                    {address.recipient_name}
+                  </p>
+                )}
+                {address.phone_number && (
+                  <p className="mt-1 flex items-center gap-2 text-sm text-slate-600">
+                    <Phone className="h-4 w-4 shrink-0" />
+                    {address.phone_number}
+                  </p>
+                )}
                 <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">
                   {address.full_address}
                 </p>
                 {address.landmark && (
                   <p className="mt-2 text-sm text-slate-500">
                     Landmark: {address.landmark}
+                  </p>
+                )}
+                {address.instructions && (
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Instructions: {address.instructions}
                   </p>
                 )}
                 <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-200 pt-4">
@@ -322,45 +358,54 @@ export function SavedAddressManager({ profile }) {
             className="space-y-5"
             noValidate
           >
-            <div className="grid gap-5 sm:grid-cols-2">
-              <FormField
-                id="addressLabel"
-                label="Address label"
-                error={errors.label?.message}
-              >
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-semibold text-slate-800">
+                Location label
+              </legend>
+              <div className="grid grid-cols-3 gap-2">
+                {LOCATION_LABELS.map((option) => {
+                  const Icon = option.icon;
+                  const selected = labelType === option.value;
+                  return (
+                    <Button
+                      key={option.value}
+                      type="button"
+                      variant={selected ? "default" : "outline"}
+                      className="h-auto flex-col gap-2 py-3"
+                      aria-pressed={selected}
+                      onClick={() => chooseLabelType(option.value)}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {option.value}
+                    </Button>
+                  );
+                })}
+              </div>
+              {labelType === "Custom" ? (
+                <FormField
+                  id="addressLabel"
+                  label="Custom label"
+                  error={errors.label?.message}
+                >
+                  <Input
+                    id="addressLabel"
+                    placeholder="Example: Parents' house"
+                    maxLength={50}
+                    autoFocus
+                    {...register("label")}
+                  />
+                </FormField>
+              ) : (
                 <Input
                   id="addressLabel"
-                  placeholder="Home, Work, Family"
-                  maxLength={50}
+                  type="hidden"
                   {...register("label")}
                 />
-              </FormField>
-              <FormField
-                id="addressPhone"
-                label="Phone number"
-                error={errors.phoneNumber?.message}
-              >
-                <Input
-                  id="addressPhone"
-                  type="tel"
-                  inputMode="tel"
-                  maxLength={30}
-                  {...register("phoneNumber")}
-                />
-              </FormField>
-            </div>
-            <FormField
-              id="addressRecipient"
-              label="Recipient or contact name"
-              error={errors.recipientName?.message}
-            >
-              <Input
-                id="addressRecipient"
-                autoComplete="name"
-                maxLength={120}
-                {...register("recipientName")}
-              />
-            </FormField>
+              )}
+              {labelType !== "Custom" && errors.label?.message && (
+                <p className="text-sm text-red-600">{errors.label.message}</p>
+              )}
+            </fieldset>
             <FormField
               id="addressFull"
               label="Complete address"
@@ -381,18 +426,56 @@ export function SavedAddressManager({ profile }) {
             >
               <Input
                 id="addressLandmark"
+                placeholder="Example: Beside the barangay hall"
                 maxLength={200}
                 {...register("landmark")}
               />
             </FormField>
+            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+              <h3 className="font-semibold text-slate-900">
+                Recipient details (optional)
+              </h3>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Save these only when this place usually has the same recipient.
+                Blank fields will not replace the task contact in a new request.
+              </p>
+              <div className="mt-4 grid gap-5 sm:grid-cols-2">
+                <FormField
+                  id="addressRecipient"
+                  label="Recipient name"
+                  error={errors.recipientName?.message}
+                >
+                  <Input
+                    id="addressRecipient"
+                    autoComplete="name"
+                    maxLength={120}
+                    {...register("recipientName")}
+                  />
+                </FormField>
+                <FormField
+                  id="addressPhone"
+                  label="Recipient phone"
+                  error={errors.phoneNumber?.message}
+                >
+                  <Input
+                    id="addressPhone"
+                    type="tel"
+                    inputMode="tel"
+                    maxLength={30}
+                    {...register("phoneNumber")}
+                  />
+                </FormField>
+              </div>
+            </div>
             <FormField
               id="addressInstructions"
-              label="Instructions (optional)"
+              label="Location instructions (optional)"
               error={errors.instructions?.message}
             >
               <Textarea
                 id="addressInstructions"
                 className="min-h-20"
+                placeholder="Example: Call at the gate or leave with reception"
                 maxLength={500}
                 {...register("instructions")}
               />
