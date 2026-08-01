@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, CalendarClock, LoaderCircle, MapPin } from "lucide-react";
+import { ArrowLeft, CalendarClock, LoaderCircle } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { requestSchema } from "@/validation/requestSchema";
@@ -16,15 +16,19 @@ import {
   FULFILLMENT_TYPES,
   PAYMENT_ARRANGEMENTS,
   PAYMENT_PAYER_TYPES,
+  REQUEST_SCENARIO_LABELS,
+  REQUEST_SCENARIO_RULES,
+  REQUEST_SCENARIOS,
   REQUEST_STATUSES,
 } from "@/lib/requestConstants";
+import {
+  getHandoffContact,
+  inferScenarioType,
+} from "@/lib/requestScenarioUtils";
 import { devLog } from "@/lib/errors";
 import { formatCurrency, getFriendlyRequestError } from "@/lib/requestUtils";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  ApproximateLocationPicker,
-  RequestLocationFields,
-} from "@/components/requests/RequestLocationFields";
+import { ScenarioLocationFields } from "@/components/requests/ScenarioLocationFields";
 import { InPersonPaymentNotice } from "@/components/requests/InPersonPaymentNotice";
 import { RequestPaymentFields } from "@/components/requests/RequestPaymentTerms";
 import { FormField } from "@/components/common/FormField";
@@ -74,6 +78,7 @@ export function EditRequestPage() {
   } = useForm({
     resolver: zodResolver(requestSchema),
     defaultValues: {
+      scenarioType: REQUEST_SCENARIOS.CUSTOM,
       categoryId: "",
       title: "",
       description: "",
@@ -85,6 +90,7 @@ export function EditRequestPage() {
       payerName: "",
       payerPhone: "",
       merchantReference: "",
+      requestorPresentAtHandoff: true,
       dueAt: "",
       fulfillmentType: FULFILLMENT_TYPES.DELIVERY,
       pickupAddress: "",
@@ -93,10 +99,15 @@ export function EditRequestPage() {
       deliveryAddress: "",
       deliveryLandmark: "",
       deliveryInstructions: "",
-      contactName: profile.full_name || "",
-      contactPhone: profile.phone_number || "",
-      approximateLatitude: null,
-      approximateLongitude: null,
+      pickupContactName: "",
+      pickupContactPhone: "",
+      destinationContactName: profile.full_name || "",
+      destinationContactPhone: profile.phone_number || "",
+      contactIsRequestor: true,
+      exactLatitude: null,
+      exactLongitude: null,
+      destinationExactLatitude: null,
+      destinationExactLongitude: null,
     },
   });
   const expenseBudget =
@@ -108,6 +119,18 @@ export function EditRequestPage() {
   });
   const payerType = useWatch({ control, name: "payerType" });
   const fulfillmentType = useWatch({ control, name: "fulfillmentType" });
+  const scenarioType = useWatch({ control, name: "scenarioType" });
+  const contactIsRequestor = useWatch({
+    control,
+    name: "contactIsRequestor",
+  });
+  const requestorPresentAtHandoff = useWatch({
+    control,
+    name: "requestorPresentAtHandoff",
+  });
+  const formValues = useWatch({ control });
+  const handoffContact = getHandoffContact(formValues);
+  const scenarioRule = REQUEST_SCENARIO_RULES[scenarioType];
   const amountDueToRunner =
     paymentArrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
       ? expenseBudget + serviceFee
@@ -151,6 +174,9 @@ export function EditRequestPage() {
           setCategories(categoryResult.data || []);
           setRequestStatus(request.status);
           reset({
+            scenarioType:
+              request.scenario_type ||
+              inferScenarioType(location?.fulfillment_type, terms?.arrangement),
             categoryId: String(request.category_id),
             title: request.title,
             description: request.description,
@@ -163,6 +189,8 @@ export function EditRequestPage() {
             payerName: paymentDetails?.payer_name || "",
             payerPhone: paymentDetails?.payer_phone || "",
             merchantReference: paymentDetails?.merchant_reference || "",
+            requestorPresentAtHandoff:
+              terms?.requestor_present_at_handoff ?? true,
             dueAt: toLocalDateTime(request.due_at),
             fulfillmentType:
               location?.fulfillment_type || FULFILLMENT_TYPES.DELIVERY,
@@ -172,10 +200,39 @@ export function EditRequestPage() {
             deliveryAddress: location?.delivery_address || "",
             deliveryLandmark: location?.delivery_landmark || "",
             deliveryInstructions: location?.delivery_instructions || "",
-            contactName: location?.contact_name || profile.full_name || "",
-            contactPhone: location?.contact_phone || profile.phone_number || "",
-            approximateLatitude: request.approximate_latitude,
-            approximateLongitude: request.approximate_longitude,
+            pickupContactName:
+              location?.pickup_contact_name ||
+              (location?.fulfillment_type === FULFILLMENT_TYPES.PICKUP_ONLY
+                ? location?.contact_name
+                : "") ||
+              "",
+            pickupContactPhone:
+              location?.pickup_contact_phone ||
+              (location?.fulfillment_type === FULFILLMENT_TYPES.PICKUP_ONLY
+                ? location?.contact_phone
+                : "") ||
+              "",
+            destinationContactName:
+              location?.destination_contact_name ||
+              (location?.fulfillment_type !== FULFILLMENT_TYPES.PICKUP_ONLY
+                ? location?.contact_name
+                : "") ||
+              profile.full_name ||
+              "",
+            destinationContactPhone:
+              location?.destination_contact_phone ||
+              (location?.fulfillment_type !== FULFILLMENT_TYPES.PICKUP_ONLY
+                ? location?.contact_phone
+                : "") ||
+              profile.phone_number ||
+              "",
+            contactIsRequestor: location?.contact_is_requestor ?? true,
+            exactLatitude: location?.exact_latitude ?? null,
+            exactLongitude: location?.exact_longitude ?? null,
+            destinationExactLatitude:
+              location?.destination_exact_latitude ?? null,
+            destinationExactLongitude:
+              location?.destination_exact_longitude ?? null,
           });
         }
         setLoading(false);
@@ -185,6 +242,99 @@ export function EditRequestPage() {
       active = false;
     };
   }, [requestId, reset, profile.full_name, profile.phone_number, user.id]);
+
+  useEffect(() => {
+    if (payerType !== PAYMENT_PAYER_TYPES.RECIPIENT) return;
+    setValue("payerName", handoffContact.name || "", { shouldDirty: true });
+    setValue("payerPhone", handoffContact.phone || "", {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }, [handoffContact.name, handoffContact.phone, payerType, setValue]);
+
+  function changeScenario(nextScenario) {
+    const rule = REQUEST_SCENARIO_RULES[nextScenario];
+    setValue("scenarioType", nextScenario, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    setValue("fulfillmentType", rule.fulfillmentType, { shouldDirty: true });
+    setValue("paymentArrangement", rule.paymentArrangement, {
+      shouldDirty: true,
+    });
+    setValue("expenseBudget", 0, { shouldDirty: true });
+    setValue("merchantReference", "", { shouldDirty: true });
+    setValue("payerType", PAYMENT_PAYER_TYPES.REQUESTOR, { shouldDirty: true });
+    setValue("requestorPresentAtHandoff", true, { shouldDirty: true });
+    setValue("contactIsRequestor", true, { shouldDirty: true });
+    setValue("area", "", { shouldDirty: true });
+    for (const field of [
+      "pickupAddress",
+      "pickupLandmark",
+      "pickupInstructions",
+      "deliveryAddress",
+      "deliveryLandmark",
+      "deliveryInstructions",
+      "pickupContactName",
+      "pickupContactPhone",
+      "destinationContactName",
+      "destinationContactPhone",
+    ]) {
+      setValue(field, "", { shouldDirty: true });
+    }
+    for (const field of [
+      "exactLatitude",
+      "exactLongitude",
+      "destinationExactLatitude",
+      "destinationExactLongitude",
+    ]) {
+      setValue(field, null, { shouldDirty: true });
+    }
+    setValue("destinationContactName", profile.full_name || "", {
+      shouldDirty: true,
+    });
+    setValue("destinationContactPhone", profile.phone_number || "", {
+      shouldDirty: true,
+    });
+  }
+
+  function changeCustomFulfillment(nextFulfillmentType) {
+    setValue("paymentArrangement", "", { shouldDirty: true });
+    setValue("expenseBudget", 0, { shouldDirty: true });
+    setValue("merchantReference", "", { shouldDirty: true });
+    setValue("area", "", { shouldDirty: true });
+    for (const field of [
+      "pickupAddress",
+      "pickupLandmark",
+      "pickupInstructions",
+      "deliveryAddress",
+      "deliveryLandmark",
+      "deliveryInstructions",
+      "pickupContactName",
+      "pickupContactPhone",
+      "destinationContactName",
+      "destinationContactPhone",
+    ]) {
+      setValue(field, "", { shouldDirty: true });
+    }
+    for (const field of [
+      "exactLatitude",
+      "exactLongitude",
+      "destinationExactLatitude",
+      "destinationExactLongitude",
+    ]) {
+      setValue(field, null, { shouldDirty: true });
+    }
+    setValue("contactIsRequestor", true, { shouldDirty: true });
+    const prefix =
+      nextFulfillmentType === FULFILLMENT_TYPES.PICKUP_ONLY
+        ? "pickupContact"
+        : "destinationContact";
+    setValue(`${prefix}Name`, profile.full_name || "", { shouldDirty: true });
+    setValue(`${prefix}Phone`, profile.phone_number || "", {
+      shouldDirty: true,
+    });
+  }
 
   async function onSubmit(values) {
     setFormError("");
@@ -251,6 +401,27 @@ export function EditRequestPage() {
           <CardContent className="space-y-6">
             {formError && <Alert variant="destructive">{formError}</Alert>}
             <FormField
+              id="editScenario"
+              label="Request scenario"
+              error={errors.scenarioType?.message}
+            >
+              <select
+                id="editScenario"
+                value={scenarioType}
+                onChange={(event) => changeScenario(event.target.value)}
+                className="flex h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus-visible:border-brand-600 focus-visible:ring-2 focus-visible:ring-brand-600/20"
+              >
+                {Object.entries(REQUEST_SCENARIO_LABELS).map(
+                  ([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ),
+                )}
+              </select>
+              <input type="hidden" {...register("scenarioType")} />
+            </FormField>
+            <FormField
               id="editCategory"
               label="Task category"
               error={errors.categoryId?.message}
@@ -286,49 +457,33 @@ export function EditRequestPage() {
                 {...register("description")}
               />
             </FormField>
-            <FormField
-              id="editArea"
-              label="General service area (public)"
-              error={errors.area?.message}
+            <input type="hidden" {...register("area")} />
+            <div
+              className={`grid gap-5 ${
+                paymentArrangement === PAYMENT_ARRANGEMENTS.NO_PURCHASE
+                  ? ""
+                  : "sm:grid-cols-2"
+              }`}
             >
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
-                <Input
-                  id="editArea"
-                  className="pl-10"
-                  maxLength={160}
-                  {...register("area")}
-                />
-              </div>
-            </FormField>
-            <ApproximateLocationPicker
-              control={control}
-              register={register}
-              setValue={setValue}
-              trigger={trigger}
-              errors={errors}
-              idPrefix="edit"
-              onAreaSuggested={(suggestedArea) =>
-                setValue("area", suggestedArea, {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                })
-              }
-            />
-            <div className="grid gap-5 sm:grid-cols-2">
-              <FormField
-                id="editExpenseBudget"
-                label="Estimated errand expense"
-                error={errors.expenseBudget?.message}
-              >
-                <Input
+              {paymentArrangement !== PAYMENT_ARRANGEMENTS.NO_PURCHASE && (
+                <FormField
                   id="editExpenseBudget"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  {...register("expenseBudget")}
-                />
-              </FormField>
+                  label={
+                    paymentArrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
+                      ? "Maximum amount the Runner may spend"
+                      : "Prepaid order value (optional)"
+                  }
+                  error={errors.expenseBudget?.message}
+                >
+                  <Input
+                    id="editExpenseBudget"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    {...register("expenseBudget")}
+                  />
+                </FormField>
+              )}
               <FormField
                 id="editServiceFee"
                 label="Agreed Runner service fee"
@@ -350,6 +505,13 @@ export function EditRequestPage() {
               payerType={payerType}
               expenseBudget={expenseBudget}
               idPrefix="editPayment"
+              guided
+              setValue={setValue}
+              contactName={handoffContact.name}
+              contactPhone={handoffContact.phone}
+              contactIsRequestor={contactIsRequestor}
+              requestorPresentAtHandoff={requestorPresentAtHandoff}
+              allowedArrangements={scenarioRule.allowedPaymentArrangements}
             />
             <div className="rounded-xl bg-slate-50 p-4">
               <p className="text-sm text-slate-600">
@@ -387,13 +549,34 @@ export function EditRequestPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <RequestLocationFields
+            <ScenarioLocationFields
+              control={control}
               register={register}
               errors={errors}
               fulfillmentType={fulfillmentType}
               idPrefix="edit"
               setValue={setValue}
+              trigger={trigger}
+              profile={profile}
+              contactIsRequestor={contactIsRequestor}
+              requestorPresentAtHandoff={requestorPresentAtHandoff}
+              onPrimaryAreaSuggested={(suggestedArea) =>
+                setValue("area", suggestedArea, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              showFulfillmentSelector={
+                scenarioType === REQUEST_SCENARIOS.CUSTOM
+              }
+              onFulfillmentChange={changeCustomFulfillment}
             />
+            {errors.area?.message && (
+              <Alert variant="destructive" className="mt-6">
+                We could not identify the general area. Open the primary map,
+                search for the location, and choose a result.
+              </Alert>
+            )}
           </CardContent>
         </Card>
 

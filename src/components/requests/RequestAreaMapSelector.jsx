@@ -16,6 +16,11 @@ import {
   hasValidCoordinatePair,
   toFeatureCollection,
 } from "@/lib/geoUtils";
+import {
+  DEFAULT_GEOCODING_SEARCH_URL,
+  publicAreaLabelFromAddress,
+  reverseGeocodePublicArea,
+} from "@/lib/geocodingUtils";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,9 +29,6 @@ const DEFAULT_CENTER = [125.543, 8.9475];
 const DEFAULT_STYLE_URL =
   import.meta.env.VITE_MAP_STYLE_URL ||
   "https://tiles.openfreemap.org/styles/liberty";
-const DEFAULT_GEOCODING_URL =
-  import.meta.env.VITE_GEOCODING_SEARCH_URL ||
-  "https://nominatim.openstreetmap.org/search";
 const ZONE_SOURCE_ID = "requestor-area-preview";
 const ZONE_FILL_LAYER_ID = "requestor-area-preview-fill";
 const ZONE_OUTLINE_LAYER_ID = "requestor-area-preview-outline";
@@ -52,20 +54,7 @@ function normalizeSearchResults(data) {
     .map((place) => ({
       id: String(place.place_id),
       label: place.display_name,
-      publicAreaLabel: [
-        place.address?.suburb ||
-          place.address?.village ||
-          place.address?.quarter ||
-          place.address?.neighbourhood ||
-          place.address?.city_district,
-        place.address?.city ||
-          place.address?.town ||
-          place.address?.municipality,
-      ]
-        .filter(
-          (value, index, values) => value && values.indexOf(value) === index,
-        )
-        .join(", "),
+      publicAreaLabel: publicAreaLabelFromAddress(place.address),
       latitude: Number(place.lat),
       longitude: Number(place.lon),
       type: place.type || place.category || "place",
@@ -77,12 +66,15 @@ export function RequestAreaMapSelector({
   longitude,
   onSelect,
   onAreaSuggested = null,
+  onAddressSuggested = null,
   onClose,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const onSelectRef = useRef(onSelect);
+  const onAreaSuggestedRef = useRef(onAreaSuggested);
+  const onAddressSuggestedRef = useRef(onAddressSuggested);
   const searchAbortRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState("");
@@ -95,6 +87,32 @@ export function RequestAreaMapSelector({
   useEffect(() => {
     onSelectRef.current = onSelect;
   }, [onSelect]);
+
+  useEffect(() => {
+    onAreaSuggestedRef.current = onAreaSuggested;
+  }, [onAreaSuggested]);
+
+  useEffect(() => {
+    onAddressSuggestedRef.current = onAddressSuggested;
+  }, [onAddressSuggested]);
+
+  async function selectExactPoint(latitudeValue, longitudeValue, area = "") {
+    onSelectRef.current(latitudeValue, longitudeValue);
+    if (area) {
+      onAreaSuggestedRef.current?.(area);
+      return;
+    }
+    if (!onAreaSuggestedRef.current) return;
+    try {
+      const suggestedArea = await reverseGeocodePublicArea(
+        latitudeValue,
+        longitudeValue,
+      );
+      if (suggestedArea) onAreaSuggestedRef.current?.(suggestedArea);
+    } catch {
+      // Pin selection remains available if the optional area lookup fails.
+    }
+  }
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return undefined;
@@ -146,7 +164,7 @@ export function RequestAreaMapSelector({
     });
 
     map.on("click", (event) => {
-      onSelectRef.current(event.lngLat.lat, event.lngLat.lng);
+      void selectExactPoint(event.lngLat.lat, event.lngLat.lng);
     });
 
     map.on("error", (event) => {
@@ -187,10 +205,10 @@ export function RequestAreaMapSelector({
         .setLngLat([Number(longitude), Number(latitude)])
         .addTo(map);
       markerRef.current.getElement().title =
-        "Private editing handle. Drag to reposition the public approximate area.";
+        "Private exact location pin. Drag to reposition it.";
       markerRef.current.on("dragend", () => {
         const point = markerRef.current.getLngLat();
-        onSelectRef.current(point.lat, point.lng);
+        void selectExactPoint(point.lat, point.lng);
       });
     } else {
       markerRef.current.setLngLat([Number(longitude), Number(latitude)]);
@@ -213,7 +231,7 @@ export function RequestAreaMapSelector({
     setResults([]);
 
     try {
-      const url = new URL(DEFAULT_GEOCODING_URL);
+      const url = new URL(DEFAULT_GEOCODING_SEARCH_URL);
       url.searchParams.set("format", "jsonv2");
       url.searchParams.set("q", searchText);
       url.searchParams.set("countrycodes", "ph");
@@ -245,10 +263,12 @@ export function RequestAreaMapSelector({
   }
 
   function chooseResult(place) {
-    onSelectRef.current(place.latitude, place.longitude);
-    if (place.publicAreaLabel && onAreaSuggested) {
-      onAreaSuggested(place.publicAreaLabel);
-    }
+    void selectExactPoint(
+      place.latitude,
+      place.longitude,
+      place.publicAreaLabel,
+    );
+    onAddressSuggestedRef.current?.(place.label);
     mapRef.current?.flyTo({
       center: [place.longitude, place.latitude],
       zoom: 14,
@@ -264,12 +284,12 @@ export function RequestAreaMapSelector({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h4 className="font-black text-slate-950">
-              Choose the public request area
+              Choose the exact location
             </h4>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Search once, click anywhere on the map, or drag the orange editing
-              pin. Runners see only the shaded area—not this pin or your exact
-              address.
+              Search, click the map, or drag the orange pin to the real pickup
+              or destination. Runners see only the shaded preview before
+              acceptance.
             </p>
           </div>
           <Button
@@ -289,7 +309,7 @@ export function RequestAreaMapSelector({
             htmlFor="requestAreaPlaceSearch"
             className="text-sm font-semibold text-slate-800"
           >
-            Search for a barangay or place
+            Search for the address, landmark, or place
           </label>
           <div className="mt-2 flex gap-2">
             <div className="relative min-w-0 flex-1">
@@ -340,7 +360,9 @@ export function RequestAreaMapSelector({
           </ul>
         )}
 
-        {DEFAULT_GEOCODING_URL.includes("nominatim.openstreetmap.org") && (
+        {DEFAULT_GEOCODING_SEARCH_URL.includes(
+          "nominatim.openstreetmap.org",
+        ) && (
           <p className="mt-3 text-xs text-slate-500">
             Place search powered by{" "}
             <a
@@ -351,7 +373,7 @@ export function RequestAreaMapSelector({
             >
               Nominatim
             </a>
-            . Search only for public places—never enter private information.
+            .
           </p>
         )}
       </div>
@@ -374,7 +396,7 @@ export function RequestAreaMapSelector({
         <div
           ref={containerRef}
           className="h-[26rem] w-full sm:h-[32rem]"
-          aria-label="Map for selecting the approximate public request area"
+          aria-label="Map for selecting the private exact request location"
         />
         <div className="pointer-events-none absolute bottom-8 left-3 z-10 max-w-[calc(100%_-_1.5rem)] rounded-lg bg-white/95 px-3 py-2 text-xs font-semibold text-slate-700 shadow">
           {hasSelection ? (
@@ -385,7 +407,7 @@ export function RequestAreaMapSelector({
           ) : (
             <span className="flex items-center gap-2">
               <Move className="h-4 w-4 shrink-0 text-brand-700" />
-              Click the map to place the approximate area
+              Click the map to place the exact private pin
             </span>
           )}
         </div>
@@ -393,12 +415,12 @@ export function RequestAreaMapSelector({
 
       <div className="flex flex-col gap-3 border-t border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs leading-5 text-slate-500">
-          Coordinates are coarsened before they leave the form, so small pin
-          movements may remain inside the same public shaded zone.
+          The orange pin is private. ButuanGo derives the shaded public zone
+          when the request is saved.
         </p>
         <Button type="button" onClick={onClose} disabled={!hasSelection}>
           <Check className="h-4 w-4" />
-          Use this approximate area
+          Use this exact location
         </Button>
       </div>
     </div>

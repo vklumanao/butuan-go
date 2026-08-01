@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { getSavedAddresses } from "@/services/addressService";
 import { devLog } from "@/lib/errors";
+import { reverseGeocodePublicArea } from "@/lib/geocodingUtils";
 
 const RequestAreaMapSelector = lazy(() =>
   import("@/components/requests/RequestAreaMapSelector").then((module) => ({
@@ -32,7 +33,7 @@ const RequestAreaMapSelector = lazy(() =>
   })),
 );
 
-function SavedAddressSelector({
+export function SavedAddressSelector({
   id,
   label,
   addresses,
@@ -127,7 +128,7 @@ function SavedAddressSelector({
   );
 }
 
-export function ApproximateLocationPicker({
+export function ExactLocationPicker({
   control,
   register,
   setValue,
@@ -135,14 +136,20 @@ export function ApproximateLocationPicker({
   errors,
   idPrefix,
   onAreaSuggested = null,
+  onAddressSuggested = null,
   embedded = false,
+  latitudeName = "exactLatitude",
+  longitudeName = "exactLongitude",
+  title = "Exact task location",
+  description = "Place the private pin at the real location. ButuanGo automatically creates the broad area shown before acceptance.",
+  currentLocationLabel = "Use my current location",
 }) {
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
   const [accuracy, setAccuracy] = useState(null);
   const [mapOpen, setMapOpen] = useState(false);
-  const latitude = useWatch({ control, name: "approximateLatitude" });
-  const longitude = useWatch({ control, name: "approximateLongitude" });
+  const latitude = useWatch({ control, name: latitudeName });
+  const longitude = useWatch({ control, name: longitudeName });
   const hasLocation =
     latitude !== null &&
     latitude !== undefined &&
@@ -154,15 +161,26 @@ export function ApproximateLocationPicker({
     Number.isFinite(Number(longitude));
 
   function setCoordinatePair(nextLatitude, nextLongitude) {
-    setValue("approximateLatitude", nextLatitude, {
+    setValue(latitudeName, nextLatitude, {
       shouldDirty: true,
       shouldValidate: false,
     });
-    setValue("approximateLongitude", nextLongitude, {
+    setValue(longitudeName, nextLongitude, {
       shouldDirty: true,
       shouldValidate: false,
     });
-    void trigger(["approximateLatitude", "approximateLongitude"]);
+    void trigger([latitudeName, longitudeName]);
+  }
+
+  function suggestArea(latitudeValue, longitudeValue) {
+    if (!onAreaSuggested) return;
+    reverseGeocodePublicArea(latitudeValue, longitudeValue)
+      .then((area) => {
+        if (area) onAreaSuggested(area);
+      })
+      .catch(() => {
+        // Exact pin selection remains usable when area lookup is unavailable.
+      });
   }
 
   function useCurrentLocation() {
@@ -176,13 +194,14 @@ export function ApproximateLocationPicker({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setCoordinatePair(position.coords.latitude, position.coords.longitude);
+        suggestArea(position.coords.latitude, position.coords.longitude);
         setAccuracy(Math.round(position.coords.accuracy));
         setLocating(false);
       },
       (error) => {
         const messages = {
-          1: "Location permission was denied. You can continue without nearby discovery.",
-          2: "Your device could not determine its location. Try again outdoors or continue without it.",
+          1: "Location permission was denied. Choose the exact point manually on the map.",
+          2: "Your device could not determine its location. Try again outdoors or choose the point manually.",
           3: "Finding your location took too long. Please try again.",
         };
         setLocationError(
@@ -191,7 +210,7 @@ export function ApproximateLocationPicker({
         setLocating(false);
       },
       {
-        enableHighAccuracy: false,
+        enableHighAccuracy: true,
         timeout: 12000,
         maximumAge: 300000,
       },
@@ -220,26 +239,20 @@ export function ApproximateLocationPicker({
     >
       <input
         type="hidden"
-        id={`${idPrefix}ApproximateLatitude`}
-        {...register("approximateLatitude")}
+        id={`${idPrefix}ExactLatitude`}
+        {...register(latitudeName)}
       />
       <input
         type="hidden"
-        id={`${idPrefix}ApproximateLongitude`}
-        {...register("approximateLongitude")}
+        id={`${idPrefix}ExactLongitude`}
+        {...register(longitudeName)}
       />
       <div className="flex gap-3">
         <MapPinned className="mt-0.5 h-5 w-5 shrink-0 text-brand-700" />
         <div className="min-w-0 flex-1">
-          <h3 className="font-bold text-brand-950">
-            {embedded
-              ? "Help Runners estimate the distance (optional)"
-              : "Help nearby Runners find this request"}
-          </h3>
+          <h3 className="font-bold text-brand-950">{title}</h3>
           <p className="mt-1 text-sm leading-6 text-brand-900/80">
-            {embedded
-              ? "Add an approximate map area so nearby Runners can judge how close the task is. Your exact address stays hidden."
-              : "Optionally use this device’s location. ButuanGo saves only a neighborhood-level approximation and displays it as a broad shaded area; it does not publish the exact coordinates captured by your browser."}
+            {description}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button
@@ -257,8 +270,8 @@ export function ApproximateLocationPicker({
               {locating
                 ? "Finding location…"
                 : hasLocation
-                  ? "Update location"
-                  : "Use current location"}
+                  ? "Update exact pin"
+                  : currentLocationLabel}
             </Button>
             <Button
               type="button"
@@ -283,13 +296,13 @@ export function ApproximateLocationPicker({
           </div>
           {hasLocation && (
             <p className="mt-3 text-sm font-semibold text-brand-800">
-              Approximate area added
+              Exact private pin added
               {accuracy ? ` · Device accuracy about ${accuracy} m` : ""}
             </p>
           )}
-          {(locationError || errors.approximateLatitude?.message) && (
+          {(locationError || errors[latitudeName]?.message) && (
             <p className="mt-3 text-sm text-red-700" role="alert">
-              {locationError || errors.approximateLatitude?.message}
+              {locationError || errors[latitudeName]?.message}
             </p>
           )}
         </div>
@@ -302,7 +315,7 @@ export function ApproximateLocationPicker({
                 <div className="text-center text-slate-600">
                   <LoaderCircle className="mx-auto h-7 w-7 animate-spin text-brand-600" />
                   <p className="mt-3 text-sm font-semibold">
-                    Preparing area selector…
+                    Preparing location selector…
                   </p>
                 </div>
               </div>
@@ -313,6 +326,7 @@ export function ApproximateLocationPicker({
               longitude={longitude}
               onSelect={selectMapArea}
               onAreaSuggested={onAreaSuggested}
+              onAddressSuggested={onAddressSuggested}
               onClose={() => setMapOpen(false)}
             />
           </Suspense>

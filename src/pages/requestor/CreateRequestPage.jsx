@@ -9,7 +9,6 @@ import {
   Clock3,
   ClipboardList,
   Eye,
-  FileText,
   LoaderCircle,
   LockKeyhole,
   MapPin,
@@ -17,6 +16,7 @@ import {
   ShieldCheck,
   ShoppingBasket,
   SlidersHorizontal,
+  Store,
   Truck,
   UserRound,
   WalletCards,
@@ -32,7 +32,14 @@ import {
   PAYMENT_ARRANGEMENT_LABELS,
   PAYMENT_PAYER_LABELS,
   PAYMENT_PAYER_TYPES,
+  REQUEST_SCENARIO_LABELS,
+  REQUEST_SCENARIO_RULES,
+  REQUEST_SCENARIOS,
 } from "@/lib/requestConstants";
+import {
+  getHandoffContact,
+  getLocationRequirements,
+} from "@/lib/requestScenarioUtils";
 import { devLog } from "@/lib/errors";
 import {
   formatCurrency,
@@ -40,10 +47,7 @@ import {
   getFriendlyRequestError,
 } from "@/lib/requestUtils";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  ApproximateLocationPicker,
-  RequestLocationFields,
-} from "@/components/requests/RequestLocationFields";
+import { ScenarioLocationFields } from "@/components/requests/ScenarioLocationFields";
 import { InPersonPaymentNotice } from "@/components/requests/InPersonPaymentNotice";
 import { RequestPaymentFields } from "@/components/requests/RequestPaymentTerms";
 import { FormField } from "@/components/common/FormField";
@@ -67,7 +71,7 @@ const STEPS = [
 ];
 
 const STEP_FIELDS = {
-  1: ["categoryId", "title", "description"],
+  1: ["scenarioType", "categoryId", "title", "description"],
   2: [
     "area",
     "fulfillmentType",
@@ -77,10 +81,15 @@ const STEP_FIELDS = {
     "deliveryAddress",
     "deliveryLandmark",
     "deliveryInstructions",
-    "contactName",
-    "contactPhone",
-    "approximateLatitude",
-    "approximateLongitude",
+    "pickupContactName",
+    "pickupContactPhone",
+    "destinationContactName",
+    "destinationContactPhone",
+    "contactIsRequestor",
+    "exactLatitude",
+    "exactLongitude",
+    "destinationExactLatitude",
+    "destinationExactLongitude",
   ],
   3: [
     "expenseBudget",
@@ -90,6 +99,7 @@ const STEP_FIELDS = {
     "payerName",
     "payerPhone",
     "merchantReference",
+    "requestorPresentAtHandoff",
     "dueAt",
   ],
   4: [],
@@ -98,11 +108,12 @@ const STEP_FIELDS = {
 const QUICK_REQUEST_TEMPLATES = [
   {
     id: "buy-deliver",
+    scenarioType: REQUEST_SCENARIOS.BUY_DELIVERY,
     label: "Buy and deliver",
     description: "For groceries, food, or everyday store items.",
     categorySlug: "shopping-groceries",
     fulfillmentType: FULFILLMENT_TYPES.PURCHASE_AND_DELIVER,
-    paymentArrangement: "",
+    paymentArrangement: PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE,
     defaultTitle: "Buy and deliver items",
     descriptionHint:
       "List the items, quantities, preferred store, acceptable alternatives, and delivery instructions.",
@@ -110,6 +121,7 @@ const QUICK_REQUEST_TEMPLATES = [
   },
   {
     id: "pickup-deliver",
+    scenarioType: REQUEST_SCENARIOS.PICKUP_DELIVERY,
     label: "Pickup and deliver",
     description: "For an item that is already ready for pickup.",
     categorySlug: "small-delivery",
@@ -121,19 +133,21 @@ const QUICK_REQUEST_TEMPLATES = [
     icon: Truck,
   },
   {
-    id: "document-delivery",
-    label: "Document delivery",
-    description: "For papers, forms, printouts, or small documents.",
-    categorySlug: "printing-documents",
+    id: "prepaid-delivery",
+    scenarioType: REQUEST_SCENARIOS.PREPAID_DELIVERY,
+    label: "Collect a prepaid order",
+    description: "For an order that is already paid and ready for pickup.",
+    categorySlug: "small-delivery",
     fulfillmentType: FULFILLMENT_TYPES.DELIVERY,
-    paymentArrangement: PAYMENT_ARRANGEMENTS.NO_PURCHASE,
-    defaultTitle: "Deliver documents",
+    paymentArrangement: PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID,
+    defaultTitle: "Collect and deliver a prepaid order",
     descriptionHint:
-      "Describe the documents, pickup contact, recipient, deadline, and handling instructions.",
-    icon: FileText,
+      "Describe the paid order, merchant, order reference, recipient, and delivery instructions.",
+    icon: Store,
   },
   {
     id: "queue-on-site",
+    scenarioType: REQUEST_SCENARIOS.ON_SITE,
     label: "Queue or on-site errand",
     description: "For waiting in line or completing a task at one place.",
     categorySlug: "other-errand",
@@ -146,6 +160,7 @@ const QUICK_REQUEST_TEMPLATES = [
   },
   {
     id: "custom",
+    scenarioType: REQUEST_SCENARIOS.CUSTOM,
     label: "Custom request",
     description: "Start without presets and choose every detail.",
     categorySlug: null,
@@ -278,10 +293,32 @@ function ReviewSectionHeader({ title, description, onEdit }) {
   );
 }
 
+function buildRequestPlanSummary(values) {
+  const handoffContact = getHandoffContact(values);
+  const destination = values.deliveryAddress || values.pickupAddress;
+  const action =
+    values.fulfillmentType === FULFILLMENT_TYPES.ON_SITE
+      ? `complete the task at ${destination}`
+      : values.fulfillmentType === FULFILLMENT_TYPES.PICKUP_ONLY
+        ? `complete the pickup at ${values.pickupAddress}`
+        : `pick up from ${values.pickupAddress} and continue to ${values.deliveryAddress}`;
+  const payment =
+    values.paymentArrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
+      ? `The Runner may spend up to ${formatCurrency(values.expenseBudget)} and will receive receipt-based reimbursement plus a ${formatCurrency(values.serviceFee)} fee.`
+      : values.paymentArrangement === PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID
+        ? `The order is prepaid; only the ${formatCurrency(values.serviceFee)} Runner fee is paid directly at handoff.`
+        : `No purchase is needed; only the ${formatCurrency(values.serviceFee)} Runner fee is paid directly.`;
+  const payer =
+    values.payerType === PAYMENT_PAYER_TYPES.REQUESTOR
+      ? "The Requestor will pay."
+      : `${handoffContact.name} will pay as the task contact.`;
+  return `The Runner will ${action}. ${handoffContact.name} is the handoff contact. ${payment} ${payer}`;
+}
+
 function RequestReviewScreen({
   values,
   selectedCategory,
-  hasApproximateArea,
+  hasExactLocations,
   amountDueToRunner,
   estimatedTotal,
   onEdit,
@@ -298,6 +335,9 @@ function RequestReviewScreen({
   ].includes(values.fulfillmentType);
   const runnerAdvance =
     values.paymentArrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE;
+  const hasDestinationPin =
+    values.destinationExactLatitude !== null &&
+    values.destinationExactLongitude !== null;
 
   return (
     <div className="space-y-6">
@@ -317,17 +357,25 @@ function RequestReviewScreen({
             <Eye className="mb-2 h-5 w-5 text-brand-700" />
             <p className="font-bold">Visible before a Runner accepts</p>
             <p className="mt-1 text-sm leading-6">
-              Eligible Runners can see the task, general area, optional shaded
-              map zone, deadline, expense estimate, Runner fee, payer type, and
-              payment arrangement.
+              Eligible Runners can see the task, general area, shaded map zones,
+              deadline, expense estimate, Runner fee, payer type, and payment
+              arrangement.
+            </p>
+          </Alert>
+          <Alert className="border-emerald-200 bg-emerald-50 text-emerald-950">
+            <ShieldCheck className="mb-2 h-5 w-5 text-emerald-700" />
+            <p className="font-bold">Your request plan</p>
+            <p className="mt-1 text-sm leading-6">
+              {buildRequestPlanSummary(values)}
             </p>
           </Alert>
           <Alert className="border-slate-200 bg-slate-50 text-slate-800">
             <LockKeyhole className="mb-2 h-5 w-5 text-slate-700" />
             <p className="font-bold">Private until acceptance</p>
             <p className="mt-1 text-sm leading-6">
-              Exact addresses, contact details, payer contact information, and
-              merchant reference are shared only with the assigned Runner.
+              Exact addresses, exact map pins, contact details, payer contact
+              information, and merchant reference are shared only with the
+              assigned Runner.
             </p>
           </Alert>
         </CardContent>
@@ -390,11 +438,13 @@ function RequestReviewScreen({
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-brand-900/70">Approximate map zone</dt>
+                  <dt className="text-brand-900/70">Automatic public zones</dt>
                   <dd className="mt-1 font-bold text-brand-950">
-                    {hasApproximateArea
-                      ? "Shaded zone included"
-                      : "Not included (optional)"}
+                    {hasExactLocations
+                      ? hasDestinationPin
+                        ? "Pickup and delivery zones included"
+                        : "Task zone included"
+                      : "Required exact pin missing"}
                   </dd>
                 </div>
               </dl>
@@ -409,6 +459,12 @@ function RequestReviewScreen({
               </div>
               <dl className="mt-4 space-y-3 text-sm">
                 <div>
+                  <dt className="text-slate-500">Scenario</dt>
+                  <dd className="mt-1 font-bold text-slate-900">
+                    {REQUEST_SCENARIO_LABELS[values.scenarioType]}
+                  </dd>
+                </div>
+                <div>
                   <dt className="text-slate-500">Fulfillment type</dt>
                   <dd className="mt-1 font-bold text-slate-900">
                     {FULFILLMENT_TYPE_LABELS[values.fulfillmentType]}
@@ -420,6 +476,9 @@ function RequestReviewScreen({
                     <dd className="mt-1 break-words font-bold text-slate-900">
                       {values.pickupAddress}
                     </dd>
+                    <dd className="mt-1 text-emerald-700">
+                      Exact pickup pin set
+                    </dd>
                     {values.pickupLandmark && (
                       <dd className="mt-1 text-slate-600">
                         Landmark: {values.pickupLandmark}
@@ -428,6 +487,12 @@ function RequestReviewScreen({
                     {values.pickupInstructions && (
                       <dd className="mt-1 whitespace-pre-wrap text-slate-600">
                         Instructions: {values.pickupInstructions}
+                      </dd>
+                    )}
+                    {needsDelivery && (
+                      <dd className="mt-2 text-slate-600">
+                        Pickup contact: {values.pickupContactName} /{" "}
+                        {values.pickupContactPhone}
                       </dd>
                     )}
                   </div>
@@ -441,6 +506,13 @@ function RequestReviewScreen({
                     </dt>
                     <dd className="mt-1 break-words font-bold text-slate-900">
                       {values.deliveryAddress}
+                    </dd>
+                    <dd className="mt-1 text-emerald-700">
+                      Exact{" "}
+                      {values.fulfillmentType === FULFILLMENT_TYPES.ON_SITE
+                        ? "task"
+                        : "delivery"}{" "}
+                      pin set
                     </dd>
                     {values.deliveryLandmark && (
                       <dd className="mt-1 text-slate-600">
@@ -459,7 +531,8 @@ function RequestReviewScreen({
                   <dd className="mt-1 flex items-start gap-2 font-bold text-slate-900">
                     <UserRound className="mt-0.5 h-4 w-4 shrink-0" />
                     <span>
-                      {values.contactName} · {values.contactPhone}
+                      {getHandoffContact(values).name} /{" "}
+                      {getHandoffContact(values).phone}
                     </span>
                   </dd>
                 </div>
@@ -479,7 +552,12 @@ function RequestReviewScreen({
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl bg-slate-50 p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Expense estimate
+                {runnerAdvance
+                  ? "Maximum Runner advance"
+                  : values.paymentArrangement ===
+                      PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID
+                    ? "Prepaid order value"
+                    : "Purchase expense"}
               </p>
               <p className="mt-1 text-lg font-black text-slate-950">
                 {formatCurrency(values.expenseBudget)}
@@ -495,7 +573,12 @@ function RequestReviewScreen({
             </div>
             <div className="rounded-xl bg-slate-50 p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Planned total
+                {runnerAdvance
+                  ? "Maximum at handoff"
+                  : values.paymentArrangement ===
+                      PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID
+                    ? "Order value plus fee"
+                    : "Runner fee only"}
               </p>
               <p className="mt-1 text-lg font-black text-slate-950">
                 {formatCurrency(estimatedTotal)}
@@ -576,7 +659,6 @@ export function CreateRequestPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [editingFromReview, setEditingFromReview] = useState(false);
-  const [contactMode, setContactMode] = useState("requestor");
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState("");
@@ -591,6 +673,7 @@ export function CreateRequestPage() {
   } = useForm({
     resolver: zodResolver(requestSchema),
     defaultValues: {
+      scenarioType: "",
       categoryId: "",
       title: "",
       description: "",
@@ -602,6 +685,7 @@ export function CreateRequestPage() {
       payerName: "",
       payerPhone: "",
       merchantReference: "",
+      requestorPresentAtHandoff: true,
       dueAt: "",
       fulfillmentType: FULFILLMENT_TYPES.DELIVERY,
       pickupAddress: "",
@@ -610,23 +694,29 @@ export function CreateRequestPage() {
       deliveryAddress: "",
       deliveryLandmark: "",
       deliveryInstructions: "",
-      contactName: profile.full_name || "",
-      contactPhone: profile.phone_number || "",
-      approximateLatitude: null,
-      approximateLongitude: null,
+      pickupContactName: "",
+      pickupContactPhone: "",
+      destinationContactName: profile.full_name || "",
+      destinationContactPhone: profile.phone_number || "",
+      contactIsRequestor: true,
+      exactLatitude: null,
+      exactLongitude: null,
+      destinationExactLatitude: null,
+      destinationExactLongitude: null,
     },
   });
   const formValues = useWatch({ control });
   const {
     title,
     categoryId,
-    approximateLatitude,
-    approximateLongitude,
+    scenarioType,
+    exactLatitude,
+    exactLongitude,
     paymentArrangement,
     payerType,
     fulfillmentType,
-    contactName,
-    contactPhone,
+    contactIsRequestor,
+    requestorPresentAtHandoff,
   } = formValues;
   const expenseBudget = Number(formValues.expenseBudget) || 0;
   const serviceFee = Number(formValues.serviceFee) || 0;
@@ -638,15 +728,19 @@ export function CreateRequestPage() {
   const selectedCategory = categories.find(
     (category) => String(category.id) === categoryId,
   );
-  const hasApproximateArea =
-    approximateLatitude !== null &&
-    approximateLatitude !== "" &&
-    approximateLongitude !== null &&
-    approximateLongitude !== "";
+  const hasExactLocations =
+    exactLatitude !== null &&
+    exactLatitude !== "" &&
+    exactLongitude !== null &&
+    exactLongitude !== "";
   const minimumDueAt = useMemo(() => minimumLocalDateTime(), []);
   const activeTemplate = QUICK_REQUEST_TEMPLATES.find(
     (template) => template.id === selectedTemplate,
   );
+  const { needsPickup, needsDestination } =
+    getLocationRequirements(fulfillmentType);
+  const handoffContact = getHandoffContact(formValues);
+  const scenarioRule = REQUEST_SCENARIO_RULES[scenarioType];
 
   useEffect(() => {
     let active = true;
@@ -669,14 +763,41 @@ export function CreateRequestPage() {
 
   useEffect(() => {
     if (payerType !== PAYMENT_PAYER_TYPES.RECIPIENT) return;
-    setValue("payerName", contactName || "", { shouldDirty: true });
-    setValue("payerPhone", contactPhone || "", {
+    setValue("payerName", handoffContact.name || "", { shouldDirty: true });
+    setValue("payerPhone", handoffContact.phone || "", {
       shouldDirty: true,
       shouldValidate: currentStep >= 3,
     });
-  }, [contactName, contactPhone, currentStep, payerType, setValue]);
+  }, [
+    currentStep,
+    handoffContact.name,
+    handoffContact.phone,
+    payerType,
+    setValue,
+  ]);
+
+  useEffect(() => {
+    if (!contactIsRequestor) return;
+    const prefix =
+      fulfillmentType === FULFILLMENT_TYPES.PICKUP_ONLY
+        ? "pickupContact"
+        : "destinationContact";
+    setValue(`${prefix}Name`, profile.full_name || "", { shouldDirty: true });
+    setValue(`${prefix}Phone`, profile.phone_number || "", {
+      shouldDirty: true,
+      shouldValidate: currentStep >= 2,
+    });
+  }, [
+    contactIsRequestor,
+    currentStep,
+    fulfillmentType,
+    profile.full_name,
+    profile.phone_number,
+    setValue,
+  ]);
 
   function applyTemplate(template) {
+    if (template.id === selectedTemplate) return;
     const previousTemplate = QUICK_REQUEST_TEMPLATES.find(
       (item) => item.id === selectedTemplate,
     );
@@ -687,18 +808,52 @@ export function CreateRequestPage() {
 
     setSelectedTemplate(template.id);
     setFormError("");
+    setValue("scenarioType", template.scenarioType, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    setValue(
+      "fulfillmentType",
+      template.fulfillmentType || FULFILLMENT_TYPES.DELIVERY,
+      {
+        shouldDirty: true,
+      },
+    );
+    setValue("paymentArrangement", template.paymentArrangement ?? "", {
+      shouldDirty: true,
+    });
+    setValue("expenseBudget", 0, { shouldDirty: true });
+    setValue("merchantReference", "", { shouldDirty: true });
+    setValue("payerType", PAYMENT_PAYER_TYPES.REQUESTOR, { shouldDirty: true });
+    setValue("payerName", "", { shouldDirty: true });
+    setValue("payerPhone", "", { shouldDirty: true });
+    setValue("requestorPresentAtHandoff", true, { shouldDirty: true });
+    setValue("contactIsRequestor", true, { shouldDirty: true });
+    setValue("area", "", { shouldDirty: true });
+    setValue("pickupAddress", "", { shouldDirty: true });
+    setValue("pickupLandmark", "", { shouldDirty: true });
+    setValue("pickupInstructions", "", { shouldDirty: true });
+    setValue("deliveryAddress", "", { shouldDirty: true });
+    setValue("deliveryLandmark", "", { shouldDirty: true });
+    setValue("deliveryInstructions", "", { shouldDirty: true });
+    setValue("pickupContactName", "", { shouldDirty: true });
+    setValue("pickupContactPhone", "", { shouldDirty: true });
+    setValue("destinationContactName", profile.full_name || "", {
+      shouldDirty: true,
+    });
+    setValue("destinationContactPhone", profile.phone_number || "", {
+      shouldDirty: true,
+    });
+    setValue("exactLatitude", null, { shouldDirty: true });
+    setValue("exactLongitude", null, { shouldDirty: true });
+    setValue("destinationExactLatitude", null, { shouldDirty: true });
+    setValue("destinationExactLongitude", null, { shouldDirty: true });
 
     if (template.id === "custom") {
       setValue("categoryId", "", {
         shouldDirty: true,
         shouldValidate: false,
       });
-      setValue("fulfillmentType", FULFILLMENT_TYPES.DELIVERY, {
-        shouldDirty: true,
-      });
-      setValue("paymentArrangement", "", { shouldDirty: true });
-      setValue("expenseBudget", 0, { shouldDirty: true });
-      setValue("merchantReference", "", { shouldDirty: true });
       if (previousTemplate?.defaultTitle === title.trim()) {
         setValue("title", "", {
           shouldDirty: true,
@@ -706,12 +861,6 @@ export function CreateRequestPage() {
         });
       }
       return;
-    }
-
-    if (template.fulfillmentType) {
-      setValue("fulfillmentType", template.fulfillmentType, {
-        shouldDirty: true,
-      });
     }
 
     if (template.categorySlug) {
@@ -723,16 +872,6 @@ export function CreateRequestPage() {
           shouldDirty: true,
           shouldValidate: true,
         });
-      }
-    }
-
-    if (template.paymentArrangement !== null) {
-      setValue("paymentArrangement", template.paymentArrangement, {
-        shouldDirty: true,
-      });
-      setValue("merchantReference", "", { shouldDirty: true });
-      if (template.paymentArrangement === PAYMENT_ARRANGEMENTS.NO_PURCHASE) {
-        setValue("expenseBudget", 0, { shouldDirty: true });
       }
     }
 
@@ -752,33 +891,48 @@ export function CreateRequestPage() {
     });
   }
 
-  function chooseContactMode(nextMode) {
-    setContactMode(nextMode);
-    if (nextMode === "requestor") {
-      setValue("contactName", profile.full_name || "", {
-        shouldDirty: true,
-        shouldValidate: true,
-      });
-      setValue("contactPhone", profile.phone_number || "", {
-        shouldDirty: true,
-        shouldValidate: true,
-      });
-      if (payerType === PAYMENT_PAYER_TYPES.RECIPIENT) {
-        setValue("payerType", PAYMENT_PAYER_TYPES.REQUESTOR, {
-          shouldDirty: true,
-        });
-        setValue("payerName", "", { shouldDirty: true });
-        setValue("payerPhone", "", { shouldDirty: true });
-      }
-      return;
+  function handleCustomFulfillmentChange(nextFulfillmentType) {
+    setValue("paymentArrangement", "", { shouldDirty: true });
+    setValue("expenseBudget", 0, { shouldDirty: true });
+    setValue("merchantReference", "", { shouldDirty: true });
+    setValue("area", "", { shouldDirty: true });
+    for (const field of [
+      "pickupAddress",
+      "pickupLandmark",
+      "pickupInstructions",
+      "deliveryAddress",
+      "deliveryLandmark",
+      "deliveryInstructions",
+      "pickupContactName",
+      "pickupContactPhone",
+      "destinationContactName",
+      "destinationContactPhone",
+    ]) {
+      setValue(field, "", { shouldDirty: true });
     }
-
-    if (
-      contactName === (profile.full_name || "") &&
-      contactPhone === (profile.phone_number || "")
-    ) {
-      setValue("contactName", "", { shouldDirty: true });
-      setValue("contactPhone", "", { shouldDirty: true });
+    for (const field of [
+      "exactLatitude",
+      "exactLongitude",
+      "destinationExactLatitude",
+      "destinationExactLongitude",
+    ]) {
+      setValue(field, null, { shouldDirty: true });
+    }
+    setValue("contactIsRequestor", true, { shouldDirty: true });
+    if (nextFulfillmentType === FULFILLMENT_TYPES.PICKUP_ONLY) {
+      setValue("pickupContactName", profile.full_name || "", {
+        shouldDirty: true,
+      });
+      setValue("pickupContactPhone", profile.phone_number || "", {
+        shouldDirty: true,
+      });
+    } else {
+      setValue("destinationContactName", profile.full_name || "", {
+        shouldDirty: true,
+      });
+      setValue("destinationContactPhone", profile.phone_number || "", {
+        shouldDirty: true,
+      });
     }
   }
 
@@ -880,17 +1034,21 @@ export function CreateRequestPage() {
               disabled={categoriesLoading || Boolean(categoriesError)}
               onSelect={applyTemplate}
             />
+            <input type="hidden" {...register("scenarioType")} />
+            {errors.scenarioType?.message && (
+              <p className="text-sm text-red-600">
+                {errors.scenarioType.message}
+              </p>
+            )}
 
             {activeTemplate && (
               <Alert className="border-brand-200 bg-brand-50 text-brand-950">
                 <Check className="mb-2 h-5 w-5 text-brand-700" />
                 <p className="font-bold">{activeTemplate.label} selected</p>
                 <p className="mt-1 text-sm leading-6">
-                  {activeTemplate.id === "buy-deliver"
-                    ? "Task type and category were preset. You will still choose whether the merchant is prepaid or the Runner may advance money."
-                    : activeTemplate.id === "custom"
-                      ? "Template presets were cleared. Choose your own category, task type, and payment setup."
-                      : "Task type, category, and no-purchase payment arrangement were preset. Review and change them anytime."}
+                  {activeTemplate.id === "custom"
+                    ? "Choose the location pattern and payment setup that match the task. Invalid combinations will be blocked."
+                    : "The required locations and payment setup were selected for this scenario. You can review every detail before posting."}
                 </p>
               </Alert>
             )}
@@ -978,8 +1136,8 @@ export function CreateRequestPage() {
               </div>
               <CardTitle>Where should the Runner go?</CardTitle>
               <CardDescription>
-                Add the private task location and a general area for nearby
-                discovery.
+                Enter each real address and place its private map pin once.
+                ButuanGo creates the public shaded zones automatically.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -1006,81 +1164,51 @@ export function CreateRequestPage() {
                     </p>
                   </div>
                 </div>
-                <RequestLocationFields
+                <ScenarioLocationFields
+                  control={control}
                   register={register}
                   errors={errors}
                   fulfillmentType={fulfillmentType}
                   idPrefix="create"
                   setValue={setValue}
-                  showPrivacyNotice={false}
-                  contactMode={contactMode}
-                  onContactModeChange={chooseContactMode}
-                  onSavedContactApplied={() => setContactMode("other")}
-                  contactNameValue={contactName}
-                  contactPhoneValue={contactPhone}
+                  trigger={trigger}
+                  profile={profile}
+                  contactIsRequestor={contactIsRequestor}
+                  requestorPresentAtHandoff={requestorPresentAtHandoff}
+                  showFulfillmentSelector={
+                    scenarioType === REQUEST_SCENARIOS.CUSTOM
+                  }
+                  onFulfillmentChange={handleCustomFulfillmentChange}
+                  onPrimaryAreaSuggested={(suggestedArea) =>
+                    setValue("area", suggestedArea, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
                 />
               </section>
-
-              <section
-                className="rounded-xl border border-brand-200 bg-brand-50/30 p-4 sm:p-5"
-                aria-labelledby="public-area-heading"
-              >
-                <div className="mb-5 flex items-start gap-3">
-                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-100 text-brand-800">
-                    <Eye className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3
-                        id="public-area-heading"
-                        className="font-black text-brand-950"
-                      >
-                        Area shown to Runners
-                      </h3>
-                      <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-bold text-brand-900">
-                        Shown before acceptance
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-brand-900/70">
-                      Enter only the barangay or general area—not a house number
-                      or exact address.
-                    </p>
-                  </div>
-                </div>
-                <FormField
-                  id="requestArea"
-                  label="Barangay or general area"
-                  error={errors.area?.message}
-                >
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
-                    <Input
-                      id="requestArea"
-                      className="pl-10"
-                      placeholder="Example: Libertad, Butuan City"
-                      maxLength={160}
-                      {...register("area")}
-                    />
-                  </div>
-                </FormField>
-                <div className="mt-5">
-                  <ApproximateLocationPicker
-                    control={control}
-                    register={register}
-                    setValue={setValue}
-                    trigger={trigger}
-                    errors={errors}
-                    idPrefix="create"
-                    onAreaSuggested={(suggestedArea) =>
-                      setValue("area", suggestedArea, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      })
-                    }
-                    embedded
-                  />
-                </div>
-              </section>
+              <input type="hidden" {...register("area")} />
+              <Alert className="border-brand-200 bg-brand-50 text-brand-950">
+                <Eye className="mb-2 h-5 w-5 text-brand-700" />
+                <p className="font-bold">Shown before acceptance</p>
+                <p className="mt-1 text-sm leading-6">
+                  Runners will see{" "}
+                  {formValues.area || "a generated general area"}
+                  {needsPickup && needsDestination
+                    ? " and two broad shaded zones."
+                    : " and one broad shaded zone."}{" "}
+                  Your exact pins remain private.
+                </p>
+                {errors.area?.message && (
+                  <p
+                    className="mt-2 text-sm font-semibold text-red-700"
+                    role="alert"
+                  >
+                    We could not identify the general area. Open the primary
+                    map, search for the location, and choose a result.
+                  </p>
+                )}
+              </Alert>
             </CardContent>
           </Card>
         )}
@@ -1108,8 +1236,11 @@ export function CreateRequestPage() {
                   idPrefix="createPayment"
                   guided
                   setValue={setValue}
-                  contactName={contactName}
-                  contactPhone={contactPhone}
+                  contactName={handoffContact.name}
+                  contactPhone={handoffContact.phone}
+                  contactIsRequestor={contactIsRequestor}
+                  requestorPresentAtHandoff={requestorPresentAtHandoff}
+                  allowedArrangements={scenarioRule?.allowedPaymentArrangements}
                 />
                 {paymentArrangement && (
                   <div
@@ -1127,7 +1258,7 @@ export function CreateRequestPage() {
                           paymentArrangement ===
                           PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
                             ? "Maximum amount the Runner may spend"
-                            : "Estimated prepaid purchase amount"
+                            : "Prepaid order value (optional)"
                         }
                         error={errors.expenseBudget?.message}
                       >
@@ -1199,7 +1330,7 @@ export function CreateRequestPage() {
           <RequestReviewScreen
             values={formValues}
             selectedCategory={selectedCategory}
-            hasApproximateArea={hasApproximateArea}
+            hasExactLocations={hasExactLocations}
             amountDueToRunner={amountDueToRunner}
             estimatedTotal={estimatedTotal}
             onEdit={(step) => {

@@ -56,13 +56,17 @@ export function RequestPaymentFields({
   setValue = null,
   contactName = "",
   contactPhone = "",
+  contactIsRequestor = true,
+  requestorPresentAtHandoff = true,
+  allowedArrangements = Object.values(PAYMENT_ARRANGEMENTS),
 }) {
   function chooseArrangement(arrangement) {
+    const changed = arrangement !== paymentArrangement;
     setValue?.("paymentArrangement", arrangement, {
       shouldDirty: true,
       shouldValidate: true,
     });
-    if (arrangement === PAYMENT_ARRANGEMENTS.NO_PURCHASE) {
+    if (changed || arrangement === PAYMENT_ARRANGEMENTS.NO_PURCHASE) {
       setValue?.("expenseBudget", 0, { shouldDirty: true });
     }
     if (arrangement !== PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID) {
@@ -84,6 +88,12 @@ export function RequestPaymentFields({
       shouldDirty: true,
       shouldValidate: contactPays,
     });
+    if (!contactPays) {
+      setValue?.("requestorPresentAtHandoff", contactIsRequestor, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
   }
 
   return (
@@ -118,7 +128,9 @@ export function RequestPaymentFields({
             </legend>
             <input type="hidden" {...register("paymentArrangement")} />
             <div className="grid gap-3">
-              {PAYMENT_SETUP_OPTIONS.map((option) => {
+              {PAYMENT_SETUP_OPTIONS.filter((option) =>
+                allowedArrangements.includes(option.value),
+              ).map((option) => {
                 const selected = paymentArrangement === option.value;
                 return (
                   <button
@@ -217,6 +229,7 @@ export function RequestPaymentFields({
             <input type="hidden" {...register("payerType")} />
             <input type="hidden" {...register("payerName")} />
             <input type="hidden" {...register("payerPhone")} />
+            <input type="hidden" {...register("requestorPresentAtHandoff")} />
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
@@ -257,13 +270,37 @@ export function RequestPaymentFields({
               The selected payer must be available at handoff. ButuanGo does not
               collect or transfer money between users.
             </p>
+            {payerType === PAYMENT_PAYER_TYPES.REQUESTOR &&
+              !contactIsRequestor && (
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-amber-400"
+                    checked={requestorPresentAtHandoff}
+                    onChange={(event) =>
+                      setValue?.(
+                        "requestorPresentAtHandoff",
+                        event.target.checked,
+                        { shouldDirty: true, shouldValidate: true },
+                      )
+                    }
+                  />
+                  <span>
+                    <strong className="block">I will be at the handoff</strong>I
+                    understand that payment is direct and in person. If I cannot
+                    attend, the task contact must be selected as payer.
+                  </span>
+                </label>
+              )}
             {(errors.payerType?.message ||
               errors.payerName?.message ||
-              errors.payerPhone?.message) && (
+              errors.payerPhone?.message ||
+              errors.requestorPresentAtHandoff?.message) && (
               <p className="text-sm text-red-600">
                 {errors.payerType?.message ||
                   errors.payerName?.message ||
-                  errors.payerPhone?.message}
+                  errors.payerPhone?.message ||
+                  errors.requestorPresentAtHandoff?.message}
               </p>
             )}
           </fieldset>
@@ -367,6 +404,12 @@ export function PaymentTermsSummary({
           </p>
           <p className="font-bold text-slate-950">{arrangementLabel}</p>
           <p className="mt-1 text-sm text-slate-600">{payerLabel}</p>
+          {terms.payer_type === PAYMENT_PAYER_TYPES.REQUESTOR &&
+            terms.requestor_present_at_handoff && (
+              <p className="mt-1 text-xs font-semibold text-emerald-700">
+                Requestor confirmed they will be present for direct payment.
+              </p>
+            )}
           <p className="mt-2 text-sm leading-6 text-slate-600">
             {arrangementDescription}
           </p>
@@ -383,7 +426,7 @@ export function PaymentTermsSummary({
         {terms.arrangement === PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID && (
           <div className="flex justify-between gap-4">
             <dt className="text-slate-600">
-              Purchase estimate
+              Prepaid order value
               <span className="block text-xs">paid to merchant</span>
             </dt>
             <dd className="font-bold">{formatCurrency(expenseBudget)}</dd>

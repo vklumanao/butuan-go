@@ -186,9 +186,9 @@ export function RequestorDashboard() {
         loading: statsLoading,
         items: [
           {
-            label: "Purchase budgets",
+            label: "Potential reimbursements",
             value: summary ? formatCurrency(summary.plannedExpenseBudget) : "—",
-            helper: "Estimated errand expenses",
+            helper: "Maximum receipt-based Runner advances",
           },
           {
             label: "Runner fees",

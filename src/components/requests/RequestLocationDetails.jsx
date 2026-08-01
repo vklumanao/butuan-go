@@ -9,7 +9,10 @@ import {
   Store,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { FULFILLMENT_TYPE_LABELS } from "@/lib/requestConstants";
+import {
+  FULFILLMENT_TYPES,
+  FULFILLMENT_TYPE_LABELS,
+} from "@/lib/requestConstants";
 import { buildDirectionsUrl } from "@/lib/requestUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,9 +23,21 @@ function LocationSection({
   address,
   landmark,
   instructions,
+  contactLabel,
+  contactName,
+  contactPhone,
+  exactLatitude,
+  exactLongitude,
 }) {
   if (!address) return null;
-  const directionsUrl = buildDirectionsUrl(address);
+  const exactPoint =
+    exactLatitude !== null &&
+    exactLatitude !== undefined &&
+    exactLongitude !== null &&
+    exactLongitude !== undefined
+      ? `${exactLatitude},${exactLongitude}`
+      : "";
+  const directionsUrl = buildDirectionsUrl(exactPoint || address);
   return (
     <section className="flex gap-3 border-t border-slate-200 pt-5 first:border-0 first:pt-0">
       <Icon className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
@@ -41,11 +56,27 @@ function LocationSection({
             <strong>Instructions:</strong> {instructions}
           </p>
         )}
+        {contactName && contactPhone && (
+          <div className="mt-3 rounded-lg bg-slate-50 p-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              {contactLabel}
+            </p>
+            <p className="mt-1 break-words text-sm text-slate-700">
+              {contactName}
+            </p>
+            <a
+              className="mt-1 inline-block break-all text-sm font-semibold text-brand-700 hover:underline"
+              href={`tel:${contactPhone}`}
+            >
+              {contactPhone}
+            </a>
+          </div>
+        )}
         {directionsUrl && (
           <Button variant="outline" size="sm" className="mt-3" asChild>
             <a href={directionsUrl} target="_blank" rel="noreferrer">
               <Navigation className="h-4 w-4" />
-              Open directions
+              {exactPoint ? "Open exact pin" : "Open address"}
             </a>
           </Button>
         )}
@@ -116,6 +147,9 @@ export function RequestLocationDetails({
     );
   }
 
+  const destinationUsesPrimaryPin =
+    location.fulfillment_type === FULFILLMENT_TYPES.ON_SITE;
+
   return (
     <Card>
       <CardHeader className="flex flex-col items-start gap-3 p-5 pb-3 sm:flex-row sm:justify-between sm:gap-4 sm:p-6 sm:pb-3">
@@ -142,6 +176,11 @@ export function RequestLocationDetails({
           address={location.pickup_address}
           landmark={location.pickup_landmark}
           instructions={location.pickup_instructions}
+          contactLabel="Pickup contact"
+          contactName={location.pickup_contact_name}
+          contactPhone={location.pickup_contact_phone}
+          exactLatitude={location.exact_latitude}
+          exactLongitude={location.exact_longitude}
         />
         <LocationSection
           icon={MapPin}
@@ -149,22 +188,38 @@ export function RequestLocationDetails({
           address={location.delivery_address}
           landmark={location.delivery_landmark}
           instructions={location.delivery_instructions}
+          contactLabel="Recipient or on-site contact"
+          contactName={location.destination_contact_name}
+          contactPhone={location.destination_contact_phone}
+          exactLatitude={
+            destinationUsesPrimaryPin
+              ? location.exact_latitude
+              : location.destination_exact_latitude
+          }
+          exactLongitude={
+            destinationUsesPrimaryPin
+              ? location.exact_longitude
+              : location.destination_exact_longitude
+          }
         />
-        <section className="flex gap-3 border-t border-slate-200 pt-5">
-          <Phone className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
-          <div className="min-w-0">
-            <h3 className="font-semibold text-slate-900">Task contact</h3>
-            <p className="mt-1 break-words text-sm text-slate-700">
-              {location.contact_name}
-            </p>
-            <a
-              className="mt-1 inline-block break-all text-sm font-semibold text-brand-700 hover:underline"
-              href={`tel:${location.contact_phone}`}
-            >
-              {location.contact_phone}
-            </a>
-          </div>
-        </section>
+        {!location.pickup_contact_name &&
+          !location.destination_contact_name && (
+            <section className="flex gap-3 border-t border-slate-200 pt-5">
+              <Phone className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
+              <div className="min-w-0">
+                <h3 className="font-semibold text-slate-900">Task contact</h3>
+                <p className="mt-1 break-words text-sm text-slate-700">
+                  {location.contact_name}
+                </p>
+                <a
+                  className="mt-1 inline-block break-all text-sm font-semibold text-brand-700 hover:underline"
+                  href={`tel:${location.contact_phone}`}
+                >
+                  {location.contact_phone}
+                </a>
+              </div>
+            </section>
+          )}
       </CardContent>
     </Card>
   );

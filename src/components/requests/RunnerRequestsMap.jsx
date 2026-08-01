@@ -72,17 +72,56 @@ function toFeatureCollection(requests) {
   };
 }
 
-function toZoneFeatureCollection(pointCollection) {
-  return createFeatureCollection(
-    pointCollection.features.map((feature) => {
-      const [longitude, latitude] = feature.geometry.coordinates;
-      return createApproximateZoneFeature(
-        longitude,
-        latitude,
-        feature.properties,
+function toZoneFeatureCollection(requests) {
+  const zones = [];
+  for (const request of requests) {
+    const properties = {
+      id: request.id,
+      title: request.title,
+      area: request.area,
+      category: request.category?.name || "Uncategorized",
+      serviceFee: Number(request.service_fee) || 0,
+      paymentLabel: request.payment_terms
+        ? PAYMENT_ARRANGEMENT_LABELS[request.payment_terms.arrangement]
+        : "Payment arrangement missing",
+      maximumAdvance:
+        request.payment_terms?.arrangement ===
+        PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
+          ? Number(request.payment_terms.maximum_advance) || 0
+          : 0,
+      distanceLabel:
+        request.distanceKm === null ? "" : formatDistance(request.distanceKm),
+    };
+    if (
+      hasValidCoordinatePair(
+        request.approximate_latitude,
+        request.approximate_longitude,
+      )
+    ) {
+      zones.push(
+        createApproximateZoneFeature(
+          Number(request.approximate_longitude),
+          Number(request.approximate_latitude),
+          { ...properties, zoneLabel: "Approximate pickup or task area" },
+        ),
       );
-    }),
-  );
+    }
+    if (
+      hasValidCoordinatePair(
+        request.approximate_destination_latitude,
+        request.approximate_destination_longitude,
+      )
+    ) {
+      zones.push(
+        createApproximateZoneFeature(
+          Number(request.approximate_destination_longitude),
+          Number(request.approximate_destination_latitude),
+          { ...properties, zoneLabel: "Approximate delivery area" },
+        ),
+      );
+    }
+  }
+  return createFeatureCollection(zones);
 }
 
 function createPopupContent(properties, navigate) {
@@ -91,7 +130,7 @@ function createPopupContent(properties, navigate) {
 
   const privacyLabel = document.createElement("p");
   privacyLabel.className = "butuango-map-popup__privacy";
-  privacyLabel.textContent = "Approximate area";
+  privacyLabel.textContent = properties.zoneLabel || "Approximate area";
   content.appendChild(privacyLabel);
 
   const title = document.createElement("h3");
@@ -170,7 +209,7 @@ function removeRequestPopup(popupRef) {
 function addRequestLayers(map) {
   map.addSource(REQUEST_ZONE_SOURCE_ID, {
     type: "geojson",
-    data: toZoneFeatureCollection(toFeatureCollection([])),
+    data: toZoneFeatureCollection([]),
   });
 
   map.addLayer({
@@ -262,10 +301,11 @@ export function RunnerRequestsMap({
     [requests],
   );
   const zoneFeatureCollection = useMemo(
-    () => toZoneFeatureCollection(featureCollection),
-    [featureCollection],
+    () => toZoneFeatureCollection(requests),
+    [requests],
   );
   const mappableCount = featureCollection.features.length;
+  const zoneCount = zoneFeatureCollection.features.length;
   const hiddenCount = requests.length - mappableCount;
 
   useEffect(() => {
@@ -380,6 +420,19 @@ export function RunnerRequestsMap({
     for (const feature of featureCollection.features) {
       bounds.extend(feature.geometry.coordinates);
     }
+    for (const request of requests) {
+      if (
+        hasValidCoordinatePair(
+          request.approximate_destination_latitude,
+          request.approximate_destination_longitude,
+        )
+      ) {
+        bounds.extend([
+          Number(request.approximate_destination_longitude),
+          Number(request.approximate_destination_latitude),
+        ]);
+      }
+    }
     if (runnerLocation) {
       bounds.extend([runnerLocation.longitude, runnerLocation.latitude]);
     }
@@ -400,7 +453,13 @@ export function RunnerRequestsMap({
     } else {
       map.easeTo({ center: DEFAULT_CENTER, zoom: 12 });
     }
-  }, [featureCollection, mapReady, runnerLocation, zoneFeatureCollection]);
+  }, [
+    featureCollection,
+    mapReady,
+    requests,
+    runnerLocation,
+    zoneFeatureCollection,
+  ]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -487,8 +546,9 @@ export function RunnerRequestsMap({
             Available requests map
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            {mappableCount} approximate {mappableCount === 1 ? "area" : "areas"}{" "}
-            shown
+            {mappableCount} mappable{" "}
+            {mappableCount === 1 ? "request" : "requests"} with {zoneCount}{" "}
+            approximate {zoneCount === 1 ? "zone" : "zones"}
             {hiddenCount > 0
               ? ` · ${hiddenCount} without a map location remain available in List view`
               : ""}
