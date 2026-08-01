@@ -9,6 +9,14 @@ export async function getAdminDashboardSummary() {
   return { data: normalizeRpcRow(data), error };
 }
 
+export async function getAdminMonthlyAnalytics(month = null) {
+  const { data, error } = await supabase.rpc(
+    "admin_get_monthly_analytics",
+    { p_month: month },
+  );
+  return { data: normalizeRpcRow(data), error };
+}
+
 export async function listAdminAccounts({
   search = "",
   limit = 50,
