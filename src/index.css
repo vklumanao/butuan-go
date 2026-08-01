@@ -199,6 +199,148 @@ textarea {
   animation: landing-panel-in 420ms ease both;
 }
 
+.landing-safety-background {
+  overflow: hidden;
+}
+
+.landing-safety-field {
+  background-image: radial-gradient(
+    circle,
+    rgb(204 251 241 / 0.18) 1px,
+    transparent 1.5px
+  );
+  background-position: center;
+  background-size: 30px 30px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    rgb(0 0 0 / 0.92) 18%,
+    rgb(0 0 0 / 0.92) 82%,
+    transparent
+  );
+  opacity: 0.32;
+}
+
+.landing-safety-orb {
+  filter: blur(64px);
+  will-change: transform;
+}
+
+.landing-safety-orb-one {
+  left: 10%;
+  top: -9rem;
+  height: 24rem;
+  width: 24rem;
+  animation: landing-safety-orb-one 13s ease-in-out infinite alternate;
+  background: rgb(45 212 191 / 0.12);
+}
+
+.landing-safety-orb-two {
+  bottom: -11rem;
+  right: -4rem;
+  height: 28rem;
+  width: 28rem;
+  animation: landing-safety-orb-two 16s ease-in-out infinite alternate;
+  background: rgb(94 234 212 / 0.1);
+}
+
+.landing-safety-radar {
+  left: max(-13rem, calc(50% - 45rem));
+  top: 50%;
+  aspect-ratio: 1;
+  width: min(42rem, 58vw);
+  border: 1px solid rgb(153 246 228 / 0.08);
+  opacity: 0.58;
+  transform: translateY(-50%);
+}
+
+.landing-safety-radar-rings {
+  animation: landing-safety-radar-breathe 7s ease-in-out infinite;
+  background-image:
+    linear-gradient(
+      to right,
+      transparent calc(50% - 0.5px),
+      rgb(153 246 228 / 0.1) 50%,
+      transparent calc(50% + 0.5px)
+    ),
+    linear-gradient(
+      to bottom,
+      transparent calc(50% - 0.5px),
+      rgb(153 246 228 / 0.1) 50%,
+      transparent calc(50% + 0.5px)
+    ),
+    repeating-radial-gradient(
+      circle,
+      transparent 0 15.5%,
+      rgb(153 246 228 / 0.16) 15.8% 16%,
+      transparent 16.3% 31.5%
+    );
+}
+
+.landing-safety-radar-sweep {
+  animation: landing-safety-radar-sweep 18s linear infinite;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 300deg,
+    rgb(94 234 212 / 0.02) 315deg,
+    rgb(94 234 212 / 0.17) 352deg,
+    transparent 360deg
+  );
+  mask-image: radial-gradient(circle, #000 0 69%, transparent 72%);
+  will-change: transform;
+}
+
+.landing-safety-beacon {
+  height: 0.65rem;
+  width: 0.65rem;
+  animation: landing-safety-beacon 2.8s ease-out infinite;
+  background: rgb(153 246 228 / 0.8);
+  box-shadow:
+    0 0 0 7px rgb(94 234 212 / 0.07),
+    0 0 26px rgb(94 234 212 / 0.45);
+  transform: translate(-50%, -50%);
+}
+
+.landing-safety-active-glow {
+  display: none;
+  right: max(-10rem, calc(50% - 45rem));
+  top: var(--safety-active-y, 24%);
+  height: 11rem;
+  width: 34rem;
+  animation: landing-safety-active-glow 4.5s ease-in-out infinite;
+  background: radial-gradient(
+    ellipse,
+    rgb(94 234 212 / 0.2),
+    rgb(20 184 166 / 0.05) 45%,
+    transparent 72%
+  );
+  filter: blur(28px);
+  transform: translateY(-50%);
+  transition: top 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (min-width: 1024px) {
+  .landing-safety-active-glow {
+    display: block;
+  }
+}
+
+@media (max-width: 639px) {
+  .landing-safety-field {
+    background-size: 24px 24px;
+    opacity: 0.24;
+  }
+
+  .landing-safety-radar {
+    left: -15rem;
+    width: 30rem;
+  }
+
+  .landing-safety-orb-two {
+    display: none;
+  }
+}
+
 .scroll-reveal.landing-safety-copy {
   transform: translateX(-24px);
 }
@@ -557,6 +699,68 @@ textarea {
   }
 }
 
+@keyframes landing-safety-orb-one {
+  from {
+    transform: translate3d(-8px, 4px, 0) scale(0.95);
+  }
+  to {
+    transform: translate3d(32px, 28px, 0) scale(1.08);
+  }
+}
+
+@keyframes landing-safety-orb-two {
+  from {
+    transform: translate3d(0, 12px, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-38px, -24px, 0) scale(1.1);
+  }
+}
+
+@keyframes landing-safety-radar-breathe {
+  0%,
+  100% {
+    opacity: 0.58;
+    transform: scale(0.985);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.015);
+  }
+}
+
+@keyframes landing-safety-radar-sweep {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes landing-safety-beacon {
+  0% {
+    opacity: 0.9;
+    box-shadow:
+      0 0 0 0 rgb(94 234 212 / 0.28),
+      0 0 24px rgb(94 234 212 / 0.45);
+  }
+  75%,
+  100% {
+    opacity: 0.45;
+    box-shadow:
+      0 0 0 22px rgb(94 234 212 / 0),
+      0 0 32px rgb(94 234 212 / 0.18);
+  }
+}
+
+@keyframes landing-safety-active-glow {
+  0%,
+  100% {
+    opacity: 0.52;
+  }
+  50% {
+    opacity: 0.86;
+  }
+}
+
 @keyframes landing-launch-orb {
   from {
     transform: translate3d(0, 0, 0) scale(1);
@@ -679,6 +883,18 @@ textarea {
 
   .butuango-runner-marker::before {
     animation: none;
+  }
+
+  .landing-safety-orb,
+  .landing-safety-radar-rings,
+  .landing-safety-radar-sweep,
+  .landing-safety-beacon,
+  .landing-safety-active-glow {
+    animation: none;
+  }
+
+  .landing-safety-active-glow {
+    transition: none;
   }
 }
 

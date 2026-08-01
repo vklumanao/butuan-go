@@ -237,6 +237,8 @@ export function LandingPage() {
   const role = roleExperiences[activeRole];
   const RoleIcon = role.icon;
   const activeLaunchStage = launchStages[activeLaunchIndex];
+  const safetyActiveY =
+    24 + (activeSafetyIndex / Math.max(safetySteps.length - 1, 1)) * 52;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white">
@@ -511,9 +513,25 @@ export function LandingPage() {
 
         <section
           id="safety"
-          className="scroll-mt-20 bg-brand-900 px-4 py-20 text-white sm:px-6 lg:py-24"
+          className="landing-safety-section relative isolate scroll-mt-20 overflow-hidden bg-brand-900 px-4 py-20 text-white sm:px-6 lg:py-24"
+          style={{ "--safety-active-y": `${safetyActiveY}%` }}
         >
-          <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1fr_0.9fr]">
+          <div
+            className="landing-safety-background pointer-events-none absolute inset-0"
+            aria-hidden="true"
+          >
+            <span className="landing-safety-field absolute inset-0" />
+            <span className="landing-safety-orb landing-safety-orb-one absolute rounded-full" />
+            <span className="landing-safety-orb landing-safety-orb-two absolute rounded-full" />
+            <span className="landing-safety-radar absolute rounded-full">
+              <span className="landing-safety-radar-rings absolute inset-0 rounded-full" />
+              <span className="landing-safety-radar-sweep absolute inset-0 rounded-full" />
+              <span className="landing-safety-beacon absolute left-1/2 top-1/2 rounded-full" />
+            </span>
+            <span className="landing-safety-active-glow absolute rounded-full" />
+          </div>
+
+          <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1fr_0.9fr]">
             <ScrollReveal className="landing-safety-copy">
               <span className="inline-flex items-center gap-2 rounded-full border border-brand-300/30 bg-white/10 px-3 py-1.5 text-sm font-bold text-brand-100">
                 <ShieldCheck className="h-4 w-4" />
