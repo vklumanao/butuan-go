@@ -62,7 +62,7 @@ import { Textarea } from "@/components/ui/textarea";
 const STEPS = [
   { number: 1, label: "Task" },
   { number: 2, label: "Location" },
-  { number: 3, label: "Budget" },
+  { number: 3, label: "Payment" },
   { number: 4, label: "Review" },
 ];
 
@@ -147,7 +147,7 @@ const QUICK_REQUEST_TEMPLATES = [
   {
     id: "custom",
     label: "Custom request",
-    description: "Start with your current fields and choose every detail.",
+    description: "Start without presets and choose every detail.",
     categorySlug: null,
     fulfillmentType: null,
     paymentArrangement: null,
@@ -576,8 +576,7 @@ export function CreateRequestPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [editingFromReview, setEditingFromReview] = useState(false);
-  const [locationDefaultsInitialized, setLocationDefaultsInitialized] =
-    useState(false);
+  const [contactMode, setContactMode] = useState("requestor");
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState("");
@@ -626,6 +625,8 @@ export function CreateRequestPage() {
     paymentArrangement,
     payerType,
     fulfillmentType,
+    contactName,
+    contactPhone,
   } = formValues;
   const expenseBudget = Number(formValues.expenseBudget) || 0;
   const serviceFee = Number(formValues.serviceFee) || 0;
@@ -666,6 +667,15 @@ export function CreateRequestPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (payerType !== PAYMENT_PAYER_TYPES.RECIPIENT) return;
+    setValue("payerName", contactName || "", { shouldDirty: true });
+    setValue("payerPhone", contactPhone || "", {
+      shouldDirty: true,
+      shouldValidate: currentStep >= 3,
+    });
+  }, [contactName, contactPhone, currentStep, payerType, setValue]);
+
   function applyTemplate(template) {
     const previousTemplate = QUICK_REQUEST_TEMPLATES.find(
       (item) => item.id === selectedTemplate,
@@ -677,6 +687,26 @@ export function CreateRequestPage() {
 
     setSelectedTemplate(template.id);
     setFormError("");
+
+    if (template.id === "custom") {
+      setValue("categoryId", "", {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
+      setValue("fulfillmentType", FULFILLMENT_TYPES.DELIVERY, {
+        shouldDirty: true,
+      });
+      setValue("paymentArrangement", "", { shouldDirty: true });
+      setValue("expenseBudget", 0, { shouldDirty: true });
+      setValue("merchantReference", "", { shouldDirty: true });
+      if (previousTemplate?.defaultTitle === title.trim()) {
+        setValue("title", "", {
+          shouldDirty: true,
+          shouldValidate: false,
+        });
+      }
+      return;
+    }
 
     if (template.fulfillmentType) {
       setValue("fulfillmentType", template.fulfillmentType, {
@@ -722,13 +752,42 @@ export function CreateRequestPage() {
     });
   }
 
+  function chooseContactMode(nextMode) {
+    setContactMode(nextMode);
+    if (nextMode === "requestor") {
+      setValue("contactName", profile.full_name || "", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      setValue("contactPhone", profile.phone_number || "", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      if (payerType === PAYMENT_PAYER_TYPES.RECIPIENT) {
+        setValue("payerType", PAYMENT_PAYER_TYPES.REQUESTOR, {
+          shouldDirty: true,
+        });
+        setValue("payerName", "", { shouldDirty: true });
+        setValue("payerPhone", "", { shouldDirty: true });
+      }
+      return;
+    }
+
+    if (
+      contactName === (profile.full_name || "") &&
+      contactPhone === (profile.phone_number || "")
+    ) {
+      setValue("contactName", "", { shouldDirty: true });
+      setValue("contactPhone", "", { shouldDirty: true });
+    }
+  }
+
   async function goToNextStep() {
     setFormError("");
     const valid = await trigger(STEP_FIELDS[currentStep], {
       shouldFocus: true,
     });
     if (!valid) return;
-    if (currentStep === 2) setLocationDefaultsInitialized(true);
     if (editingFromReview) {
       setEditingFromReview(false);
       setCurrentStep(4);
@@ -741,7 +800,6 @@ export function CreateRequestPage() {
 
   function goToPreviousStep() {
     setFormError("");
-    if (currentStep === 2) setLocationDefaultsInitialized(true);
     setCurrentStep((step) => Math.max(step - 1, 1));
     scrollToForm();
   }
@@ -831,7 +889,7 @@ export function CreateRequestPage() {
                   {activeTemplate.id === "buy-deliver"
                     ? "Task type and category were preset. You will still choose whether the merchant is prepaid or the Runner may advance money."
                     : activeTemplate.id === "custom"
-                      ? "No fields were changed. Continue with your own request details."
+                      ? "Template presets were cleared. Choose your own category, task type, and payment setup."
                       : "Task type, category, and no-purchase payment arrangement were preset. Review and change them anytime."}
                 </p>
               </Alert>
@@ -920,8 +978,8 @@ export function CreateRequestPage() {
               </div>
               <CardTitle>Where should the Runner go?</CardTitle>
               <CardDescription>
-                Add the task details first, then choose what Runners can see
-                before accepting.
+                Add the private task location and a general area for nearby
+                discovery.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -954,8 +1012,12 @@ export function CreateRequestPage() {
                   fulfillmentType={fulfillmentType}
                   idPrefix="create"
                   setValue={setValue}
-                  applyDefaultAddress={!locationDefaultsInitialized}
                   showPrivacyNotice={false}
+                  contactMode={contactMode}
+                  onContactModeChange={chooseContactMode}
+                  onSavedContactApplied={() => setContactMode("other")}
+                  contactNameValue={contactName}
+                  contactPhoneValue={contactPhone}
                 />
               </section>
 
@@ -1030,42 +1092,13 @@ export function CreateRequestPage() {
                 <div className="mb-2 grid h-10 w-10 place-items-center rounded-xl bg-brand-100 text-brand-800">
                   <WalletCards className="h-5 w-5" />
                 </div>
-                <CardTitle>Budget and schedule</CardTitle>
+                <CardTitle>Payment and schedule</CardTitle>
                 <CardDescription>
-                  Set the expected expense, Runner fee, and optional deadline.
+                  Answer the payment questions, set the amounts, and add an
+                  optional deadline.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <FormField
-                    id="expenseBudget"
-                    label="Estimated errand expense"
-                    error={errors.expenseBudget?.message}
-                  >
-                    <Input
-                      id="expenseBudget"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      inputMode="decimal"
-                      {...register("expenseBudget")}
-                    />
-                  </FormField>
-                  <FormField
-                    id="serviceFee"
-                    label="Runner service fee"
-                    error={errors.serviceFee?.message}
-                  >
-                    <Input
-                      id="serviceFee"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      inputMode="decimal"
-                      {...register("serviceFee")}
-                    />
-                  </FormField>
-                </div>
                 <RequestPaymentFields
                   register={register}
                   errors={errors}
@@ -1073,20 +1106,73 @@ export function CreateRequestPage() {
                   payerType={payerType}
                   expenseBudget={expenseBudget}
                   idPrefix="createPayment"
+                  guided
+                  setValue={setValue}
+                  contactName={contactName}
+                  contactPhone={contactPhone}
                 />
-                <div className="rounded-xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-600">
-                    Expected amount paid to the Runner at handoff
-                  </p>
-                  <p className="mt-1 text-2xl font-black text-slate-950">
-                    {formatCurrency(amountDueToRunner)}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {paymentArrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
-                      ? "Maximum advance plus Runner fee. The actual reimbursement will follow the receipt."
-                      : "The purchase expense is not collected by the Runner under this arrangement."}
-                  </p>
-                </div>
+                {paymentArrangement && (
+                  <div
+                    className={`grid gap-5 ${
+                      paymentArrangement === PAYMENT_ARRANGEMENTS.NO_PURCHASE
+                        ? ""
+                        : "sm:grid-cols-2"
+                    }`}
+                  >
+                    {paymentArrangement !==
+                      PAYMENT_ARRANGEMENTS.NO_PURCHASE && (
+                      <FormField
+                        id="expenseBudget"
+                        label={
+                          paymentArrangement ===
+                          PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
+                            ? "Maximum amount the Runner may spend"
+                            : "Estimated prepaid purchase amount"
+                        }
+                        error={errors.expenseBudget?.message}
+                      >
+                        <Input
+                          id="expenseBudget"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          inputMode="decimal"
+                          {...register("expenseBudget")}
+                        />
+                      </FormField>
+                    )}
+                    <FormField
+                      id="serviceFee"
+                      label="Runner service fee"
+                      error={errors.serviceFee?.message}
+                    >
+                      <Input
+                        id="serviceFee"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputMode="decimal"
+                        {...register("serviceFee")}
+                      />
+                    </FormField>
+                  </div>
+                )}
+                {paymentArrangement && (
+                  <div className="rounded-xl bg-slate-50 p-4">
+                    <p className="text-sm text-slate-600">
+                      Expected payment to the Runner at handoff
+                    </p>
+                    <p className="mt-1 text-2xl font-black text-slate-950">
+                      {formatCurrency(amountDueToRunner)}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {paymentArrangement ===
+                      PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
+                        ? "Maximum advance plus Runner fee. The actual reimbursement will follow the receipt."
+                        : "The purchase expense is not collected by the Runner under this arrangement."}
+                    </p>
+                  </div>
+                )}
                 <InPersonPaymentNotice />
                 <FormField
                   id="dueAt"

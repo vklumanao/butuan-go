@@ -638,9 +638,6 @@ export async function getRequestorNextActions(userId) {
   const priorities = {
     [REQUEST_STATUSES.FAILED]: 0,
     [REQUEST_STATUSES.AWAITING_CONFIRMATION]: 1,
-    [REQUEST_STATUSES.IN_PROGRESS]: 2,
-    [REQUEST_STATUSES.ACCEPTED]: 3,
-    [REQUEST_STATUSES.OPEN]: 4,
   };
   const { data, error } = await supabase
     .from("requests")

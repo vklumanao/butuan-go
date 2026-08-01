@@ -1,11 +1,4 @@
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { useWatch } from "react-hook-form";
 import { Link } from "react-router-dom";
 import {
@@ -17,6 +10,8 @@ import {
   MapPinned,
   Phone,
   Store,
+  UserRound,
+  UsersRound,
   X,
 } from "lucide-react";
 import {
@@ -333,14 +328,17 @@ export function RequestLocationFields({
   fulfillmentType,
   idPrefix = "location",
   setValue,
-  applyDefaultAddress = false,
   showPrivacyNotice = true,
+  contactMode = null,
+  onContactModeChange = null,
+  onSavedContactApplied = null,
+  contactNameValue = "",
+  contactPhoneValue = "",
 }) {
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [addressesLoading, setAddressesLoading] = useState(true);
   const [pickupSavedId, setPickupSavedId] = useState("");
   const [deliverySavedId, setDeliverySavedId] = useState("");
-  const defaultApplied = useRef(false);
   const needsPickup = [
     FULFILLMENT_TYPES.PICKUP_ONLY,
     FULFILLMENT_TYPES.DELIVERY,
@@ -363,20 +361,24 @@ export function RequestLocationFields({
         target === "delivery" ||
         fulfillmentType === FULFILLMENT_TYPES.PICKUP_ONLY
       ) {
+        let savedContactApplied = false;
         if (address.recipient_name) {
           setValue("contactName", address.recipient_name, {
             shouldDirty: true,
           });
+          savedContactApplied = true;
         }
         if (address.phone_number) {
           setValue("contactPhone", address.phone_number, {
             shouldDirty: true,
             shouldValidate: true,
           });
+          savedContactApplied = true;
         }
+        if (savedContactApplied) onSavedContactApplied?.();
       }
     },
-    [fulfillmentType, setValue],
+    [fulfillmentType, onSavedContactApplied, setValue],
   );
 
   function selectSavedAddress(addressId, target) {
@@ -393,26 +395,14 @@ export function RequestLocationFields({
       if (error) {
         devLog("Saved address selector retrieval failed", error);
       } else {
-        const addresses = data || [];
-        setSavedAddresses(addresses);
-        const defaultAddress = addresses.find((address) => address.is_default);
-        if (applyDefaultAddress && defaultAddress && !defaultApplied.current) {
-          defaultApplied.current = true;
-          const target =
-            fulfillmentType === FULFILLMENT_TYPES.PICKUP_ONLY
-              ? "pickup"
-              : "delivery";
-          if (target === "pickup") setPickupSavedId(defaultAddress.id);
-          else setDeliverySavedId(defaultAddress.id);
-          copyAddress(defaultAddress, target);
-        }
+        setSavedAddresses(data || []);
       }
       setAddressesLoading(false);
     });
     return () => {
       active = false;
     };
-  }, [applyDefaultAddress, copyAddress, fulfillmentType]);
+  }, []);
   const needsDelivery = [
     FULFILLMENT_TYPES.DELIVERY,
     FULFILLMENT_TYPES.PURCHASE_AND_DELIVER,
@@ -576,38 +566,102 @@ export function RequestLocationFields({
       )}
 
       <section className="rounded-xl border border-slate-200 p-4 sm:p-5">
-        <div className="mb-5 flex items-center gap-2">
+        <div className="mb-5 flex items-start gap-3">
           <Phone className="h-5 w-5 text-brand-600" />
-          <h3 className="font-bold">Task contact</h3>
+          <div>
+            <h3 className="font-bold">Who should the Runner contact?</h3>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              This person receives calls or messages about the pickup, delivery,
+              or task location.
+            </p>
+          </div>
         </div>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <FormField
-            id={`${idPrefix}ContactName`}
-            label="Contact name"
-            error={errors.contactName?.message}
-          >
-            <Input
+        {onContactModeChange && (
+          <div className="mb-5 grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              aria-pressed={contactMode === "requestor"}
+              onClick={() => onContactModeChange("requestor")}
+              className={`rounded-xl border p-4 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-brand-600/30 ${
+                contactMode === "requestor"
+                  ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600"
+                  : "border-slate-200 bg-white hover:border-brand-300"
+              }`}
+            >
+              <UserRound className="h-5 w-5 text-brand-700" />
+              <span className="mt-2 block font-bold text-slate-950">Me</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-600">
+                Use my profile contact details.
+              </span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={contactMode === "other"}
+              onClick={() => onContactModeChange("other")}
+              className={`rounded-xl border p-4 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-brand-600/30 ${
+                contactMode === "other"
+                  ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600"
+                  : "border-slate-200 bg-white hover:border-brand-300"
+              }`}
+            >
+              <UsersRound className="h-5 w-5 text-brand-700" />
+              <span className="mt-2 block font-bold text-slate-950">
+                Someone else
+              </span>
+              <span className="mt-1 block text-xs leading-5 text-slate-600">
+                Add the recipient or on-site contact.
+              </span>
+            </button>
+          </div>
+        )}
+        {(!onContactModeChange || contactMode === "other") && (
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FormField
               id={`${idPrefix}ContactName`}
-              autoComplete="name"
-              maxLength={120}
-              {...register("contactName")}
-            />
-          </FormField>
-          <FormField
-            id={`${idPrefix}ContactPhone`}
-            label="Contact phone"
-            error={errors.contactPhone?.message}
-          >
-            <Input
+              label="Contact name"
+              error={errors.contactName?.message}
+            >
+              <Input
+                id={`${idPrefix}ContactName`}
+                autoComplete="name"
+                maxLength={120}
+                {...register("contactName")}
+              />
+            </FormField>
+            <FormField
               id={`${idPrefix}ContactPhone`}
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              maxLength={30}
-              {...register("contactPhone")}
-            />
-          </FormField>
-        </div>
+              label="Contact phone"
+              error={errors.contactPhone?.message}
+            >
+              <Input
+                id={`${idPrefix}ContactPhone`}
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                maxLength={30}
+                {...register("contactPhone")}
+              />
+            </FormField>
+          </div>
+        )}
+        {onContactModeChange && contactMode === "requestor" && (
+          <div className="rounded-lg bg-slate-50 p-3 text-sm leading-6 text-slate-600">
+            <input type="hidden" {...register("contactName")} />
+            <input type="hidden" {...register("contactPhone")} />
+            <p>
+              <span className="font-semibold text-slate-900">
+                {contactNameValue || "Profile name unavailable"}
+              </span>
+              {contactPhoneValue && ` · ${contactPhoneValue}`}
+            </p>
+            {(errors.contactName?.message || errors.contactPhone?.message) && (
+              <p className="mt-2 text-red-600" role="alert">
+                Your profile contact is incomplete. Choose Someone else and
+                enter a valid task contact.
+              </p>
+            )}
+          </div>
+        )}
       </section>
     </div>
   );

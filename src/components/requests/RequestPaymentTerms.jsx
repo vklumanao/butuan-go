@@ -25,6 +25,26 @@ const PAYMENT_ARRANGEMENT_DESCRIPTIONS = Object.freeze({
     "The Runner may voluntarily use personal money up to the agreed limit and is paid directly after receipt review.",
 });
 
+const PAYMENT_SETUP_OPTIONS = [
+  {
+    value: PAYMENT_ARRANGEMENTS.NO_PURCHASE,
+    label: "No purchase is needed",
+    description: "The payer gives the Runner only the agreed service fee.",
+  },
+  {
+    value: PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID,
+    label: "The merchant will be prepaid",
+    description:
+      "The item or order is paid before pickup, so the Runner uses no personal money.",
+  },
+  {
+    value: PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE,
+    label: "Runner may use personal money",
+    description:
+      "The Runner chooses whether to advance money and must be reimbursed at handoff.",
+  },
+];
+
 export function RequestPaymentFields({
   register,
   errors,
@@ -32,7 +52,40 @@ export function RequestPaymentFields({
   payerType,
   expenseBudget,
   idPrefix = "payment",
+  guided = false,
+  setValue = null,
+  contactName = "",
+  contactPhone = "",
 }) {
+  function chooseArrangement(arrangement) {
+    setValue?.("paymentArrangement", arrangement, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    if (arrangement === PAYMENT_ARRANGEMENTS.NO_PURCHASE) {
+      setValue?.("expenseBudget", 0, { shouldDirty: true });
+    }
+    if (arrangement !== PAYMENT_ARRANGEMENTS.MERCHANT_PREPAID) {
+      setValue?.("merchantReference", "", { shouldDirty: true });
+    }
+  }
+
+  function choosePayer(nextPayerType) {
+    setValue?.("payerType", nextPayerType, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    const contactPays = nextPayerType === PAYMENT_PAYER_TYPES.RECIPIENT;
+    setValue?.("payerName", contactPays ? contactName : "", {
+      shouldDirty: true,
+      shouldValidate: contactPays,
+    });
+    setValue?.("payerPhone", contactPays ? contactPhone : "", {
+      shouldDirty: true,
+      shouldValidate: contactPays,
+    });
+  }
+
   return (
     <section
       className="rounded-xl border border-slate-200 p-4 sm:p-5"
@@ -47,36 +100,76 @@ export function RequestPaymentFields({
             id={`${idPrefix}PaymentHeading`}
             className="font-black text-slate-950"
           >
-            Payment arrangement
+            {guided ? "How payment will work" : "Payment arrangement"}
           </h3>
           <p className="mt-1 text-sm leading-6 text-slate-500">
-            Runners see the arrangement and maximum cash exposure before
-            accepting. Private payer details appear only after acceptance.
+            {guided
+              ? "Answer two practical questions. Runners see the plan and maximum cash exposure before accepting."
+              : "Runners see the arrangement and maximum cash exposure before accepting. Private payer details appear only after acceptance."}
           </p>
         </div>
       </div>
 
       <div className="space-y-5">
-        <FormField
-          id={`${idPrefix}Arrangement`}
-          label="How will purchase expenses be handled?"
-          error={errors.paymentArrangement?.message}
-        >
-          <select
-            id={`${idPrefix}Arrangement`}
-            className="flex h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus-visible:border-brand-600 focus-visible:ring-2 focus-visible:ring-brand-600/20"
-            {...register("paymentArrangement")}
-          >
-            <option value="">Choose a payment arrangement</option>
-            {Object.entries(PAYMENT_ARRANGEMENT_LABELS).map(
-              ([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ),
+        {guided ? (
+          <fieldset className="space-y-3">
+            <legend className="text-sm font-semibold text-slate-800">
+              Will the Runner need to pay for anything?
+            </legend>
+            <input type="hidden" {...register("paymentArrangement")} />
+            <div className="grid gap-3">
+              {PAYMENT_SETUP_OPTIONS.map((option) => {
+                const selected = paymentArrangement === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => chooseArrangement(option.value)}
+                    className={`rounded-xl border p-4 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-brand-600/30 ${
+                      selected
+                        ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600"
+                        : "border-slate-200 bg-white hover:border-brand-300"
+                    }`}
+                  >
+                    <span className="font-bold text-slate-950">
+                      {option.label}
+                    </span>
+                    <span className="mt-1 block text-sm leading-6 text-slate-600">
+                      {option.description}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {errors.paymentArrangement?.message && (
+              <p className="text-sm text-red-600">
+                {errors.paymentArrangement.message}
+              </p>
             )}
-          </select>
-        </FormField>
+          </fieldset>
+        ) : (
+          <FormField
+            id={`${idPrefix}Arrangement`}
+            label="How will purchase expenses be handled?"
+            error={errors.paymentArrangement?.message}
+          >
+            <select
+              id={`${idPrefix}Arrangement`}
+              className="flex h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus-visible:border-brand-600 focus-visible:ring-2 focus-visible:ring-brand-600/20"
+              {...register("paymentArrangement")}
+            >
+              <option value="">Choose a payment arrangement</option>
+              {Object.entries(PAYMENT_ARRANGEMENT_LABELS).map(
+                ([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ),
+              )}
+            </select>
+          </FormField>
+        )}
 
         {paymentArrangement === PAYMENT_ARRANGEMENTS.NO_PURCHASE && (
           <Alert className="border-slate-200 bg-slate-50 text-slate-800">
@@ -116,29 +209,89 @@ export function RequestPaymentFields({
           </Alert>
         )}
 
-        <FormField
-          id={`${idPrefix}PayerType`}
-          label={
-            paymentArrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
-              ? "Who will reimburse expenses and pay the Runner fee?"
-              : "Who will pay the Runner fee?"
-          }
-          error={errors.payerType?.message}
-        >
-          <select
+        {guided ? (
+          <fieldset className="space-y-3 border-t border-slate-200 pt-5">
+            <legend className="text-sm font-semibold text-slate-800">
+              Who will pay the Runner during meetup or delivery?
+            </legend>
+            <input type="hidden" {...register("payerType")} />
+            <input type="hidden" {...register("payerName")} />
+            <input type="hidden" {...register("payerPhone")} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                aria-pressed={payerType === PAYMENT_PAYER_TYPES.REQUESTOR}
+                onClick={() => choosePayer(PAYMENT_PAYER_TYPES.REQUESTOR)}
+                className={`rounded-xl border p-4 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-brand-600/30 ${
+                  payerType === PAYMENT_PAYER_TYPES.REQUESTOR
+                    ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600"
+                    : "border-slate-200 bg-white hover:border-brand-300"
+                }`}
+              >
+                <span className="font-bold text-slate-950">I will pay</span>
+                <span className="mt-1 block text-xs leading-5 text-slate-600">
+                  I will be available to settle with the Runner.
+                </span>
+              </button>
+              <button
+                type="button"
+                aria-pressed={payerType === PAYMENT_PAYER_TYPES.RECIPIENT}
+                onClick={() => choosePayer(PAYMENT_PAYER_TYPES.RECIPIENT)}
+                className={`rounded-xl border p-4 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-brand-600/30 ${
+                  payerType === PAYMENT_PAYER_TYPES.RECIPIENT
+                    ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600"
+                    : "border-slate-200 bg-white hover:border-brand-300"
+                }`}
+              >
+                <span className="font-bold text-slate-950">
+                  The task contact will pay
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-slate-600">
+                  {contactName
+                    ? `${contactName} will settle at handoff.`
+                    : "Uses the recipient or on-site contact from Location."}
+                </span>
+              </button>
+            </div>
+            <p className="text-xs leading-5 text-slate-500">
+              The selected payer must be available at handoff. ButuanGo does not
+              collect or transfer money between users.
+            </p>
+            {(errors.payerType?.message ||
+              errors.payerName?.message ||
+              errors.payerPhone?.message) && (
+              <p className="text-sm text-red-600">
+                {errors.payerType?.message ||
+                  errors.payerName?.message ||
+                  errors.payerPhone?.message}
+              </p>
+            )}
+          </fieldset>
+        ) : (
+          <FormField
             id={`${idPrefix}PayerType`}
-            className="flex h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus-visible:border-brand-600 focus-visible:ring-2 focus-visible:ring-brand-600/20"
-            {...register("payerType")}
+            label={
+              paymentArrangement === PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
+                ? "Who will reimburse expenses and pay the Runner fee?"
+                : "Who will pay the Runner fee?"
+            }
+            error={errors.payerType?.message}
           >
-            {Object.entries(PAYMENT_PAYER_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </FormField>
+            <select
+              id={`${idPrefix}PayerType`}
+              className="flex h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus-visible:border-brand-600 focus-visible:ring-2 focus-visible:ring-brand-600/20"
+              {...register("payerType")}
+            >
+              {Object.entries(PAYMENT_PAYER_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        )}
 
-        {payerType === PAYMENT_PAYER_TYPES.RECIPIENT && (
+        {!guided && payerType === PAYMENT_PAYER_TYPES.RECIPIENT && (
           <div className="grid gap-5 sm:grid-cols-2">
             <FormField
               id={`${idPrefix}PayerName`}

@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  ArrowLeft,
-  CalendarClock,
-  ClipboardList,
-  MapPin,
-  RefreshCw,
-} from "lucide-react";
+import { ArrowLeft, CalendarClock, MapPin, RefreshCw } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import {
   getRequestorRequestById,
@@ -287,6 +281,21 @@ export function RequestDetailsPage() {
 
       <RequestProgressTimeline request={request} role="requestor" />
 
+      <Card className="mt-5 border-brand-200 shadow-sm">
+        <CardHeader className="border-b border-brand-100 bg-brand-50/60 p-5 pb-4 sm:p-6 sm:pb-4">
+          <CardTitle>What you need to do next</CardTitle>
+        </CardHeader>
+        <CardContent className="p-5 sm:p-6">
+          <RequestorRequestActions
+            request={request}
+            onChanged={loadRequest}
+            receipts={receipts}
+            settlement={settlement}
+            disputes={disputes}
+          />
+        </CardContent>
+      </Card>
+
       <div className="mt-7 grid min-w-0 gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-5 sm:space-y-6">
           <Card>
@@ -424,19 +433,6 @@ export function RequestDetailsPage() {
                 serviceFee={request.service_fee}
               />
               <InPersonPaymentNotice compact />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-5">
-              <ClipboardList className="h-6 w-6 text-brand-600" />
-              <h2 className="mt-3 font-bold">Requestor controls</h2>
-              <RequestorRequestActions
-                request={request}
-                onChanged={loadRequest}
-                receipts={receipts}
-                settlement={settlement}
-                disputes={disputes}
-              />
             </CardContent>
           </Card>
         </aside>

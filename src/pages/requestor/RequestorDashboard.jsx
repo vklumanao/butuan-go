@@ -101,6 +101,24 @@ export function RequestorDashboard() {
   const currentMonth = new Intl.DateTimeFormat("en-PH", {
     month: "long",
   }).format(new Date());
+  const priorityRequest = nextActions[0] || null;
+  const workspaceNotice = priorityRequest
+    ? {
+        title:
+          priorityRequest.status === REQUEST_STATUSES.AWAITING_CONFIRMATION
+            ? `Action needed: Review ${priorityRequest.title}`
+            : `Action needed: Check ${priorityRequest.title}`,
+        description:
+          nextActions.length > 1
+            ? `${priorityRequest.description} You have ${nextActions.length} requests that need your attention.`
+            : priorityRequest.description,
+        to: priorityRequest.to,
+        linkLabel:
+          priorityRequest.status === REQUEST_STATUSES.AWAITING_CONFIRMATION
+            ? "Review and confirm"
+            : "Review issue",
+      }
+    : null;
 
   return (
     <DashboardPage
@@ -188,6 +206,7 @@ export function RequestorDashboard() {
           ? "Payment estimates are unavailable right now. Reload the dashboard to try again."
           : "Estimates are based on request budgets and agreed fees, not confirmed payments. Actual payment happens in person after meeting the Runner.",
       }}
+      workspaceNotice={workspaceNotice}
       actionLabel="Create a Request"
       actionTo="/requestor/requests/new"
       emptyTitle="No requests need attention"
