@@ -1,9 +1,6 @@
 import { supabase } from "@/lib/supabase";
-import { coarsenCoordinate } from "@/lib/geoUtils";
-import {
-  PAYMENT_ARRANGEMENTS,
-  REQUEST_STATUSES,
-} from "@/lib/requestConstants";
+import { PAYMENT_ARRANGEMENTS, REQUEST_STATUSES } from "@/lib/requestConstants";
+import { getHandoffContact } from "@/lib/requestScenarioUtils";
 
 const REQUEST_SELECT = `
   id,
@@ -13,8 +10,11 @@ const REQUEST_SELECT = `
   title,
   description,
   area,
+  scenario_type,
   approximate_latitude,
   approximate_longitude,
+  approximate_destination_latitude,
+  approximate_destination_longitude,
   expense_budget,
   service_fee,
   due_at,
@@ -36,7 +36,8 @@ const REQUEST_SELECT = `
     maximum_advance,
     runner_consented_at,
     runner_consented_amount,
-    receipt_evidence_required
+    receipt_evidence_required,
+    requestor_present_at_handoff
   )
 `;
 
@@ -45,7 +46,9 @@ function normalizeRpcRow(data) {
 }
 
 function locationRpcParams(values) {
+  const handoffContact = getHandoffContact(values);
   return {
+    p_scenario_type: values.scenarioType,
     p_fulfillment_type: values.fulfillmentType,
     p_pickup_address: values.pickupAddress.trim() || null,
     p_pickup_landmark: values.pickupLandmark.trim() || null,
@@ -53,12 +56,18 @@ function locationRpcParams(values) {
     p_delivery_address: values.deliveryAddress.trim() || null,
     p_delivery_landmark: values.deliveryLandmark.trim() || null,
     p_delivery_instructions: values.deliveryInstructions.trim() || null,
-    p_contact_name: values.contactName.trim(),
-    p_contact_phone: values.contactPhone.trim(),
-    // Coarsen in the browser before transmission; the RPC enforces the same
-    // precision again so a modified client cannot persist an exact point.
-    p_approximate_latitude: coarsenCoordinate(values.approximateLatitude),
-    p_approximate_longitude: coarsenCoordinate(values.approximateLongitude),
+    p_pickup_contact_name: values.pickupContactName.trim() || null,
+    p_pickup_contact_phone: values.pickupContactPhone.trim() || null,
+    p_destination_contact_name: values.destinationContactName.trim() || null,
+    p_destination_contact_phone: values.destinationContactPhone.trim() || null,
+    p_contact_is_requestor: Boolean(values.contactIsRequestor),
+    p_requestor_present_at_handoff: Boolean(values.requestorPresentAtHandoff),
+    p_contact_name: handoffContact.name.trim(),
+    p_contact_phone: handoffContact.phone.trim(),
+    p_exact_latitude: values.exactLatitude,
+    p_exact_longitude: values.exactLongitude,
+    p_destination_exact_latitude: values.destinationExactLatitude,
+    p_destination_exact_longitude: values.destinationExactLongitude,
   };
 }
 
@@ -69,6 +78,7 @@ function paymentRpcParams(values) {
     p_payer_name: values.payerName.trim() || null,
     p_payer_phone: values.payerPhone.trim() || null,
     p_merchant_reference: values.merchantReference.trim() || null,
+    p_requestor_present_at_handoff: Boolean(values.requestorPresentAtHandoff),
   };
 }
 
@@ -83,7 +93,7 @@ export async function getCategories() {
 
 export async function createRequest(values) {
   const { data, error } = await supabase.rpc(
-    "create_request_with_payment_terms",
+    "create_request_with_exact_locations",
     {
       p_category_id: Number(values.categoryId),
       p_title: values.title.trim(),
@@ -101,7 +111,7 @@ export async function createRequest(values) {
 
 export async function updateOpenRequest(requestId, values) {
   const { data, error } = await supabase.rpc(
-    "update_open_request_with_payment_terms",
+    "update_open_request_with_exact_locations",
     {
       p_request_id: requestId,
       p_category_id: Number(values.categoryId),
@@ -122,7 +132,7 @@ export async function getRequestLocation(requestId) {
   return supabase
     .from("request_locations")
     .select(
-      "request_id, fulfillment_type, pickup_address, pickup_landmark, pickup_instructions, delivery_address, delivery_landmark, delivery_instructions, contact_name, contact_phone, created_at, updated_at",
+      "request_id, fulfillment_type, pickup_address, pickup_landmark, pickup_instructions, delivery_address, delivery_landmark, delivery_instructions, contact_name, contact_phone, pickup_contact_name, pickup_contact_phone, destination_contact_name, destination_contact_phone, contact_is_requestor, exact_latitude, exact_longitude, destination_exact_latitude, destination_exact_longitude, created_at, updated_at",
     )
     .eq("request_id", requestId)
     .maybeSingle();
@@ -196,13 +206,11 @@ export async function getRequestDisputes(requestId) {
 }
 
 export async function saveRequestLocation(requestId, values) {
-  const { data, error } = await supabase.rpc(
-    "save_request_location_and_geography",
-    {
-      p_request_id: requestId,
-      ...locationRpcParams(values),
-    },
-  );
+  const { data, error } = await supabase.rpc("save_request_exact_locations", {
+    p_request_id: requestId,
+    p_area: values.area.trim(),
+    ...locationRpcParams(values),
+  });
   return { data: normalizeRpcRow(data), error };
 }
 
@@ -234,12 +242,9 @@ export async function acceptRequest(requestId, cashAdvanceConsent = false) {
 }
 
 export async function confirmRequestCashAdvance(requestId) {
-  const { data, error } = await supabase.rpc(
-    "confirm_request_cash_advance",
-    {
-      p_request_id: requestId,
-    },
-  );
+  const { data, error } = await supabase.rpc("confirm_request_cash_advance", {
+    p_request_id: requestId,
+  });
   return { data: normalizeRpcRow(data), error };
 }
 
@@ -267,11 +272,7 @@ export async function confirmRequestSettlementReceived(requestId, amount) {
   return { data: normalizeRpcRow(data), error };
 }
 
-export async function reportRequestFailure(
-  requestId,
-  reasonCode,
-  description,
-) {
+export async function reportRequestFailure(requestId, reasonCode, description) {
   const { data, error } = await supabase.rpc("report_request_failure", {
     p_request_id: requestId,
     p_reason_code: reasonCode,
@@ -281,13 +282,10 @@ export async function reportRequestFailure(
 }
 
 export async function acknowledgeRequestFailure(failureId, note) {
-  const { data, error } = await supabase.rpc(
-    "acknowledge_request_failure",
-    {
-      p_failure_id: failureId,
-      p_note: note.trim() || null,
-    },
-  );
+  const { data, error } = await supabase.rpc("acknowledge_request_failure", {
+    p_failure_id: failureId,
+    p_note: note.trim() || null,
+  });
   return { data: normalizeRpcRow(data), error };
 }
 
@@ -301,12 +299,9 @@ export async function openRequestDispute(requestId, category, description) {
 }
 
 export async function withdrawRequestDispute(disputeId) {
-  const { data, error } = await supabase.rpc(
-    "withdraw_request_dispute",
-    {
-      p_dispute_id: disputeId,
-    },
-  );
+  const { data, error } = await supabase.rpc("withdraw_request_dispute", {
+    p_dispute_id: disputeId,
+  });
   return { data: normalizeRpcRow(data), error };
 }
 
@@ -333,12 +328,9 @@ export async function resolveRequestPriceChange(
 }
 
 export async function withdrawRequestPriceChange(priceChangeId) {
-  const { data, error } = await supabase.rpc(
-    "withdraw_request_price_change",
-    {
-      p_price_change_id: priceChangeId,
-    },
-  );
+  const { data, error } = await supabase.rpc("withdraw_request_price_change", {
+    p_price_change_id: priceChangeId,
+  });
   return { data: normalizeRpcRow(data), error };
 }
 
@@ -567,7 +559,7 @@ export async function getRequestorSummary(userId) {
         request.payment_terms?.arrangement ===
         PAYMENT_ARRANGEMENTS.RUNNER_ADVANCE
           ? request.payment_terms.maximum_advance
-          : request.expense_budget;
+          : 0;
       counts.plannedExpenseBudget += Number(plannedExpense) || 0;
       counts.plannedServiceFees += Number(request.service_fee) || 0;
 
@@ -638,9 +630,6 @@ export async function getRequestorNextActions(userId) {
   const priorities = {
     [REQUEST_STATUSES.FAILED]: 0,
     [REQUEST_STATUSES.AWAITING_CONFIRMATION]: 1,
-    [REQUEST_STATUSES.IN_PROGRESS]: 2,
-    [REQUEST_STATUSES.ACCEPTED]: 3,
-    [REQUEST_STATUSES.OPEN]: 4,
   };
   const { data, error } = await supabase
     .from("requests")

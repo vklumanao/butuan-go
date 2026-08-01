@@ -15,7 +15,7 @@ export const REQUEST_STATUS_LABELS = Object.freeze({
   [REQUEST_STATUSES.AWAITING_CONFIRMATION]: "Awaiting confirmation",
   [REQUEST_STATUSES.COMPLETED]: "Completed",
   [REQUEST_STATUSES.CANCELLED]: "Cancelled",
-  [REQUEST_STATUSES.FAILED]: "Delivery failed",
+  [REQUEST_STATUSES.FAILED]: "Task failed",
 });
 
 export const REQUEST_STATUS_TRANSITIONS = Object.freeze({
@@ -52,6 +52,58 @@ export const FULFILLMENT_TYPE_LABELS = Object.freeze({
   [FULFILLMENT_TYPES.ON_SITE]: "On-site errand",
 });
 
+export const REQUEST_SCENARIOS = Object.freeze({
+  ON_SITE: "ON_SITE",
+  PICKUP_DELIVERY: "PICKUP_DELIVERY",
+  PREPAID_DELIVERY: "PREPAID_DELIVERY",
+  BUY_DELIVERY: "BUY_DELIVERY",
+  CUSTOM: "CUSTOM",
+});
+
+export const REQUEST_SCENARIO_LABELS = Object.freeze({
+  [REQUEST_SCENARIOS.ON_SITE]: "On-site errand",
+  [REQUEST_SCENARIOS.PICKUP_DELIVERY]: "Pick up and deliver",
+  [REQUEST_SCENARIOS.PREPAID_DELIVERY]: "Collect a prepaid order",
+  [REQUEST_SCENARIOS.BUY_DELIVERY]: "Buy and deliver",
+  [REQUEST_SCENARIOS.CUSTOM]: "Custom request",
+});
+
+export const REQUEST_SCENARIO_RULES = Object.freeze({
+  [REQUEST_SCENARIOS.ON_SITE]: Object.freeze({
+    fulfillmentType: FULFILLMENT_TYPES.ON_SITE,
+    paymentArrangement: "NO_PURCHASE",
+    allowedPaymentArrangements: Object.freeze([
+      "NO_PURCHASE",
+      "MERCHANT_PREPAID",
+      "RUNNER_ADVANCE",
+    ]),
+  }),
+  [REQUEST_SCENARIOS.PICKUP_DELIVERY]: Object.freeze({
+    fulfillmentType: FULFILLMENT_TYPES.DELIVERY,
+    paymentArrangement: "NO_PURCHASE",
+    allowedPaymentArrangements: Object.freeze(["NO_PURCHASE"]),
+  }),
+  [REQUEST_SCENARIOS.PREPAID_DELIVERY]: Object.freeze({
+    fulfillmentType: FULFILLMENT_TYPES.DELIVERY,
+    paymentArrangement: "MERCHANT_PREPAID",
+    allowedPaymentArrangements: Object.freeze(["MERCHANT_PREPAID"]),
+  }),
+  [REQUEST_SCENARIOS.BUY_DELIVERY]: Object.freeze({
+    fulfillmentType: FULFILLMENT_TYPES.PURCHASE_AND_DELIVER,
+    paymentArrangement: "RUNNER_ADVANCE",
+    allowedPaymentArrangements: Object.freeze(["RUNNER_ADVANCE"]),
+  }),
+  [REQUEST_SCENARIOS.CUSTOM]: Object.freeze({
+    fulfillmentType: FULFILLMENT_TYPES.DELIVERY,
+    paymentArrangement: "",
+    allowedPaymentArrangements: Object.freeze([
+      "NO_PURCHASE",
+      "MERCHANT_PREPAID",
+      "RUNNER_ADVANCE",
+    ]),
+  }),
+});
+
 export const PAYMENT_ARRANGEMENTS = Object.freeze({
   NO_PURCHASE: "NO_PURCHASE",
   MERCHANT_PREPAID: "MERCHANT_PREPAID",
@@ -71,7 +123,7 @@ export const PAYMENT_PAYER_TYPES = Object.freeze({
 
 export const PAYMENT_PAYER_LABELS = Object.freeze({
   [PAYMENT_PAYER_TYPES.REQUESTOR]: "Requestor pays the Runner",
-  [PAYMENT_PAYER_TYPES.RECIPIENT]: "Recipient pays the Runner",
+  [PAYMENT_PAYER_TYPES.RECIPIENT]: "Task contact pays the Runner",
 });
 
 export const PRICE_CHANGE_STATUSES = Object.freeze({

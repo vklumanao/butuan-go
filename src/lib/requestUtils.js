@@ -169,6 +169,26 @@ export function getFriendlyRequestError(
     return "The Requestor must add complete private pickup or delivery details before this task can start.";
   if (message.includes("location details can no longer be changed"))
     return "Private location details cannot be changed after the Runner has started work.";
+  if (message.includes("valid request scenario"))
+    return "Choose the request scenario that best matches the task.";
+  if (message.includes("does not match the selected scenario"))
+    return "Review the task type and payment setup; they do not match the selected scenario.";
+  if (message.includes("ready pickup-and-delivery"))
+    return "A ready pickup-and-delivery request should not include a purchase expense.";
+  if (message.includes("required approximate delivery zone"))
+    return "Choose the approximate delivery zone before continuing.";
+  if (message.includes("required approximate pickup or task zone"))
+    return "Choose the approximate pickup or task zone before continuing.";
+  if (message.includes("exact delivery point"))
+    return "Choose the exact delivery point on the map before continuing.";
+  if (message.includes("exact pickup or task point"))
+    return "Choose the exact pickup or task point on the map before continuing.";
+  if (message.includes("general area can be identified"))
+    return "Search for the primary location on the map and choose a result so its general area can be identified.";
+  if (message.includes("selected task contact must be the payer"))
+    return "Use the handoff contact as payer, or choose the Requestor and confirm attendance.";
+  if (message.includes("confirm that the requestor will be present"))
+    return "Confirm that you will attend the handoff, or choose the task contact as payer.";
   if (message.includes("pickup address"))
     return "Enter a valid exact pickup address.";
   if (message.includes("delivery or destination address"))
