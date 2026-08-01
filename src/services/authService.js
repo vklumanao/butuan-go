@@ -1,7 +1,18 @@
 import { isDemoMode, supabase } from "@/lib/supabase";
+import { isPublicAuthEnabled } from "@/lib/appConfig";
 import { demoSignOut } from "./demoService";
 
 export async function signInWithGoogle() {
+  if (!isPublicAuthEnabled) {
+    return {
+      data: null,
+      error: {
+        code: "public_auth_disabled",
+        message: "Public Google access is not open yet.",
+      },
+    };
+  }
+
   if (isDemoMode) {
     return {
       data: null,

@@ -8,8 +8,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "check": "npm run lint && npm run build",
+    "check:development": "npm run lint && vite build --mode development",
     "preview": "vite preview",
-    "deploy:firebase": "npm run build && npx --yes firebase-tools@15.25.1 deploy --only hosting:app"
+    "deploy:firebase": "node scripts/assert-main-branch.mjs && npm run check && npx --yes firebase-tools@15.25.1 deploy --only hosting:app"
   },
   "dependencies": {
     "@fontsource-variable/plus-jakarta-sans": "5.2.8",

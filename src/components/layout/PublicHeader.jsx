@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Brand } from "./Brand";
+import { isPublicAuthEnabled } from "@/lib/appConfig";
 import { Button } from "@/components/ui/button";
 
 const sectionLinks = [
@@ -49,12 +50,18 @@ export function PublicHeader() {
               </a>
             ))}
           </nav>
-          <Button asChild className="shrink-0 px-3 sm:px-4">
-            <Link to="/login">
-              <span className="sm:hidden">Continue</span>
-              <span className="hidden sm:inline">Continue with Google</span>
-            </Link>
-          </Button>
+          {isPublicAuthEnabled ? (
+            <Button asChild className="shrink-0 px-3 sm:px-4">
+              <Link to="/login">
+                <span className="sm:hidden">Continue</span>
+                <span className="hidden sm:inline">Continue with Google</span>
+              </Link>
+            </Button>
+          ) : (
+            <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-900 sm:px-4 sm:text-sm">
+              Private development
+            </span>
+          )}
         </div>
       </div>
     </header>
