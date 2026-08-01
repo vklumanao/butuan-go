@@ -12,6 +12,7 @@ import {
   Navigation,
   PackageCheck,
   Printer,
+  RefreshCw,
   Search,
   Rows3,
   Shirt,
@@ -370,6 +371,7 @@ function RunnerRequestList({ mode }) {
   const [categoryError, setCategoryError] = useState("");
   const [requests, setRequests] = useState([]);
   const [loadedRequestKey, setLoadedRequestKey] = useState("");
+  const [retryNonce, setRetryNonce] = useState(0);
   const [error, setError] = useState("");
   const [runnerLocation, setRunnerLocation] = useState(null);
   const [radiusKm, setRadiusKm] = useState("all");
@@ -526,7 +528,14 @@ function RunnerRequestList({ mode }) {
     requestKey,
     selectedCategoryId,
     user.id,
+    retryNonce,
   ]);
+
+  function retryRequests() {
+    setError("");
+    setLoadedRequestKey("");
+    setRetryNonce((value) => value + 1);
+  }
 
   function selectCategory(slug) {
     setError("");
@@ -647,8 +656,15 @@ function RunnerRequestList({ mode }) {
         </Alert>
       )}
       {error && (
-        <Alert variant="destructive" className="mt-6">
-          {error}
+        <Alert
+          variant="destructive"
+          className="mt-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center"
+        >
+          <span>{error}</span>
+          <Button variant="outline" size="sm" onClick={retryRequests}>
+            <RefreshCw className="h-4 w-4" />
+            Retry
+          </Button>
         </Alert>
       )}
       {requestsLoading ? (

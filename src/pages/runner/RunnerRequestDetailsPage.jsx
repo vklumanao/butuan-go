@@ -37,6 +37,7 @@ import {
   getFriendlyRequestError,
 } from "@/lib/requestUtils";
 import { RequestStatusBadge } from "@/components/requests/RequestStatusBadge";
+import { RequestProgressTimeline } from "@/components/requests/RequestProgressTimeline";
 import { RunnerTaskActions } from "@/components/requests/RunnerTaskActions";
 import { RequestLocationDetails } from "@/components/requests/RequestLocationDetails";
 import { RequestParticipantCard } from "@/components/requests/RequestParticipantCard";
@@ -477,6 +478,8 @@ export function RunnerRequestDetailsPage() {
           </Button>
         )}
       </div>
+
+      <RequestProgressTimeline request={request} role="runner" />
 
       {isAtCapacity && (
         <Alert className="mt-6 border-amber-200 bg-amber-50 text-amber-900">

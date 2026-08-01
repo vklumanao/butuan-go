@@ -28,6 +28,7 @@ import {
   REQUEST_STATUS_LABELS,
 } from "@/lib/requestConstants";
 import { RequestStatusBadge } from "@/components/requests/RequestStatusBadge";
+import { RequestProgressTimeline } from "@/components/requests/RequestProgressTimeline";
 import { RequestorRequestActions } from "@/components/requests/RequestorRequestActions";
 import { RequestLocationDetails } from "@/components/requests/RequestLocationDetails";
 import { RequestParticipantCard } from "@/components/requests/RequestParticipantCard";
@@ -283,6 +284,8 @@ export function RequestDetailsPage() {
           </p>
         </div>
       </div>
+
+      <RequestProgressTimeline request={request} role="requestor" />
 
       <div className="mt-7 grid min-w-0 gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-5 sm:space-y-6">
