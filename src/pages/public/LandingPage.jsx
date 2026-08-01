@@ -628,7 +628,7 @@ export function LandingPage() {
                               ref={(element) => {
                                 safetyIconRefs.current[index] = element;
                               }}
-                              className="landing-safety-icon relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 text-accent-200"
+                              className="landing-safety-icon relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-brand-700 bg-brand-800 text-accent-200 shadow-sm"
                             >
                               <Icon className="h-5 w-5" />
                             </span>

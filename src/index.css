@@ -408,11 +408,17 @@ textarea {
 .landing-safety-chevron {
   transition:
     transform 280ms ease,
-    background-color 280ms ease;
+    background-color 280ms ease,
+    border-color 280ms ease,
+    box-shadow 280ms ease;
 }
 
 .landing-safety-card.is-active .landing-safety-icon {
-  background-color: rgb(255 255 255 / 0.18);
+  border-color: rgb(153 246 228 / 0.7);
+  background-color: var(--color-brand-600);
+  box-shadow:
+    0 0 0 3px rgb(94 234 212 / 0.1),
+    0 8px 20px rgb(2 44 40 / 0.24);
   transform: rotate(-4deg) scale(1.08);
 }
 
