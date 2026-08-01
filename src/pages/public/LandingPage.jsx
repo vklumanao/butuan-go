@@ -280,6 +280,29 @@ export function LandingPage() {
     };
   }, [activeSafetyIndex]);
 
+  const handleRoleTabKeyDown = (event) => {
+    const roleOrder = ["requestor", "runner"];
+    const currentIndex = roleOrder.indexOf(activeRole);
+    let nextRole = null;
+
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextRole = roleOrder[(currentIndex + 1) % roleOrder.length];
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextRole = roleOrder[
+        (currentIndex - 1 + roleOrder.length) % roleOrder.length
+      ];
+    } else if (event.key === "Home") {
+      nextRole = roleOrder[0];
+    } else if (event.key === "End") {
+      nextRole = roleOrder[roleOrder.length - 1];
+    }
+
+    if (!nextRole) return;
+    event.preventDefault();
+    setActiveRole(nextRole);
+    document.getElementById(`${nextRole}-tab`)?.focus();
+  };
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-white">
       <PublicHeader />
@@ -445,9 +468,76 @@ export function LandingPage() {
 
         <section
           id="roles"
-          className="scroll-mt-20 bg-slate-50 px-4 py-20 sm:px-6 lg:py-24"
+          className={`landing-roles-section is-${activeRole} relative isolate scroll-mt-20 overflow-hidden bg-slate-50 px-4 py-20 sm:px-6 lg:py-24`}
         >
-          <div className="mx-auto max-w-6xl">
+          <div
+            className="landing-role-background pointer-events-none absolute inset-0"
+            aria-hidden="true"
+          >
+            <span className="landing-role-field absolute inset-0" />
+            <span className="landing-role-orb landing-role-orb-requestor absolute rounded-full" />
+            <span className="landing-role-orb landing-role-orb-runner absolute rounded-full" />
+            <span className="landing-role-spotlight absolute rounded-full" />
+            <svg
+              className="landing-role-connection absolute inset-x-0 top-1/2 h-96 w-full -translate-y-1/2"
+              viewBox="0 0 1200 420"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient
+                  id="role-connection-gradient"
+                  x1="0"
+                  y1="0"
+                  x2="1"
+                  y2="0"
+                >
+                  <stop offset="0" stopColor="#009688" />
+                  <stop offset="0.5" stopColor="#94fbea" />
+                  <stop offset="1" stopColor="#ff9200" />
+                </linearGradient>
+              </defs>
+              <path
+                id="role-connection-forward"
+                d="M 120 210 C 360 40, 840 380, 1080 210"
+                className="landing-role-connection-track"
+              />
+              <path
+                id="role-connection-reverse"
+                d="M 1080 210 C 840 380, 360 40, 120 210"
+                fill="none"
+              />
+              <circle
+                className="landing-role-node landing-role-node-requestor"
+                cx="120"
+                cy="210"
+                r="11"
+              />
+              <circle
+                className="landing-role-node landing-role-node-runner"
+                cx="1080"
+                cy="210"
+                r="11"
+              />
+              <circle
+                className="landing-role-signal landing-role-signal-requestor"
+                r="7"
+              >
+                <animateMotion dur="7s" repeatCount="indefinite">
+                  <mpath href="#role-connection-forward" />
+                </animateMotion>
+              </circle>
+              <circle
+                className="landing-role-signal landing-role-signal-runner"
+                r="7"
+              >
+                <animateMotion dur="7s" repeatCount="indefinite">
+                  <mpath href="#role-connection-reverse" />
+                </animateMotion>
+              </circle>
+            </svg>
+          </div>
+
+          <div className="relative z-10 mx-auto max-w-6xl">
             <ScrollReveal className="mx-auto max-w-2xl text-center">
               <p className="font-bold text-brand-700">
                 Two ways to participate
@@ -463,20 +553,26 @@ export function LandingPage() {
 
             <ScrollReveal className="mt-10" delay={100}>
               <div
-                className="mx-auto grid max-w-lg grid-cols-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm"
+                className="landing-role-tabs relative isolate mx-auto grid max-w-lg grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm"
                 role="tablist"
                 aria-label="Choose a ButuanGo workspace"
+                onKeyDown={handleRoleTabKeyDown}
               >
+                <span
+                  className={`landing-role-tab-indicator absolute inset-y-1.5 left-1.5 rounded-xl ${activeRole === "runner" ? "is-runner" : ""}`}
+                  aria-hidden="true"
+                />
                 <button
                   type="button"
                   role="tab"
                   id="requestor-tab"
                   aria-selected={activeRole === "requestor"}
                   aria-controls="workspace-panel"
-                  className={`rounded-xl px-4 py-3 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 ${
+                  tabIndex={activeRole === "requestor" ? 0 : -1}
+                  className={`relative z-10 rounded-xl px-4 py-3 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 ${
                     activeRole === "requestor"
-                      ? "bg-brand-600 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-50"
+                      ? "text-white"
+                      : "text-slate-600 hover:text-slate-900"
                   }`}
                   onClick={() => setActiveRole("requestor")}
                 >
@@ -488,10 +584,11 @@ export function LandingPage() {
                   id="runner-tab"
                   aria-selected={activeRole === "runner"}
                   aria-controls="workspace-panel"
-                  className={`rounded-xl px-4 py-3 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 ${
+                  tabIndex={activeRole === "runner" ? 0 : -1}
+                  className={`relative z-10 rounded-xl px-4 py-3 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 ${
                     activeRole === "runner"
-                      ? "bg-accent-500 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-50"
+                      ? "text-white"
+                      : "text-slate-600 hover:text-slate-900"
                   }`}
                   onClick={() => setActiveRole("runner")}
                 >
@@ -504,32 +601,46 @@ export function LandingPage() {
                 id="workspace-panel"
                 role="tabpanel"
                 aria-labelledby={`${activeRole}-tab`}
-                className="landing-role-panel mt-6 grid overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50 lg:grid-cols-[0.9fr_1.1fr]"
+                className={`landing-role-panel is-${activeRole} mt-6 grid overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50 lg:grid-cols-[0.9fr_1.1fr]`}
               >
                 <div
                   className={`flex min-h-64 items-center justify-center border-b p-8 lg:border-b-0 lg:border-r ${role.accentClass}`}
                 >
                   <div className="text-center">
-                    <span
-                      className={`mx-auto grid h-20 w-20 place-items-center rounded-3xl shadow-sm ${role.iconClass}`}
-                    >
-                      <RoleIcon className="h-10 w-10" />
-                    </span>
+                    <div className="landing-role-icon-wrap relative mx-auto grid h-28 w-28 place-items-center">
+                      <span className="landing-role-icon-ring landing-role-icon-ring-one absolute inset-2 rounded-full" />
+                      <span className="landing-role-icon-ring landing-role-icon-ring-two absolute inset-2 rounded-full" />
+                      <span
+                        className={`landing-role-icon relative z-10 grid h-20 w-20 place-items-center rounded-3xl shadow-sm ${role.iconClass}`}
+                      >
+                        <RoleIcon className="h-10 w-10" />
+                      </span>
+                    </div>
                     <p className="mt-5 text-sm font-black uppercase tracking-[0.14em] text-slate-600">
                       {role.eyebrow}
                     </p>
                   </div>
                 </div>
                 <div className="p-6 sm:p-9">
-                  <h3 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                  <h3
+                    className="landing-role-content-item text-2xl font-black tracking-tight text-slate-950 sm:text-3xl"
+                    style={{ "--role-delay": "80ms" }}
+                  >
                     {role.title}
                   </h3>
-                  <p className="mt-4 leading-7 text-slate-600">
+                  <p
+                    className="landing-role-content-item mt-4 leading-7 text-slate-600"
+                    style={{ "--role-delay": "150ms" }}
+                  >
                     {role.description}
                   </p>
                   <ul className="mt-6 space-y-3">
-                    {role.steps.map((step) => (
-                      <li key={step} className="flex items-start gap-3">
+                    {role.steps.map((step, index) => (
+                      <li
+                        key={step}
+                        className="landing-role-content-item flex items-start gap-3"
+                        style={{ "--role-delay": `${220 + index * 70}ms` }}
+                      >
                         <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
                         <span className="text-sm leading-6 text-slate-700">
                           {step}
@@ -538,7 +649,11 @@ export function LandingPage() {
                     ))}
                   </ul>
                   {isPublicAuthEnabled && (
-                    <Button asChild className="group mt-7">
+                    <Button
+                      asChild
+                      className="landing-role-content-item group mt-7"
+                      style={{ "--role-delay": "450ms" }}
+                    >
                       <Link to="/login">
                         Continue with Google
                         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
