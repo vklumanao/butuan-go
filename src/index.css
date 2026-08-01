@@ -195,8 +195,337 @@ textarea {
   transform: translateY(-2px) rotate(-4deg) scale(1.08);
 }
 
+.landing-role-field {
+  background-image: radial-gradient(
+    circle,
+    rgb(15 118 110 / 0.13) 1px,
+    transparent 1.5px
+  );
+  background-position: center;
+  background-size: 32px 32px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 14%,
+    #000 86%,
+    transparent
+  );
+  opacity: 0.48;
+}
+
+.landing-role-orb {
+  height: 28rem;
+  width: 28rem;
+  filter: blur(70px);
+  opacity: 0.08;
+  transition: opacity 700ms ease;
+  will-change: transform;
+}
+
+.landing-role-orb-requestor {
+  left: -10rem;
+  top: 12%;
+  animation: landing-role-orb-drift 14s ease-in-out infinite alternate;
+  background: rgb(45 212 191 / 0.55);
+}
+
+.landing-role-orb-runner {
+  bottom: 4%;
+  right: -10rem;
+  animation: landing-role-orb-drift 17s ease-in-out infinite alternate-reverse;
+  background: rgb(255 165 27 / 0.48);
+}
+
+.landing-roles-section.is-requestor .landing-role-orb-requestor,
+.landing-roles-section.is-runner .landing-role-orb-runner {
+  opacity: 0.22;
+}
+
+.landing-role-spotlight {
+  left: 9%;
+  top: 46%;
+  height: 18rem;
+  width: 42%;
+  background: radial-gradient(
+    ellipse,
+    rgb(45 212 191 / 0.16),
+    transparent 70%
+  );
+  filter: blur(34px);
+  transform: translateY(-50%);
+  transition:
+    left 680ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 500ms ease;
+}
+
+.landing-roles-section.is-runner .landing-role-spotlight {
+  left: 49%;
+  background: radial-gradient(
+    ellipse,
+    rgb(255 165 27 / 0.15),
+    transparent 70%
+  );
+}
+
+.landing-role-connection {
+  opacity: 0.48;
+}
+
+.landing-role-connection-track {
+  fill: none;
+  stroke: url(#role-connection-gradient);
+  stroke-dasharray: 8 13;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.landing-role-node {
+  stroke: rgb(255 255 255 / 0.9);
+  stroke-width: 4;
+  transition:
+    fill 420ms ease,
+    opacity 420ms ease,
+    r 420ms ease;
+}
+
+.landing-role-node-requestor {
+  fill: var(--color-brand-600);
+  opacity: 0.38;
+}
+
+.landing-role-node-runner {
+  fill: var(--color-accent-500);
+  opacity: 0.38;
+}
+
+.landing-roles-section.is-requestor .landing-role-node-requestor,
+.landing-roles-section.is-runner .landing-role-node-runner {
+  opacity: 1;
+  r: 15px;
+}
+
+.landing-role-signal {
+  fill: white;
+  opacity: 0;
+  stroke-width: 5;
+  transition: opacity 300ms ease;
+}
+
+.landing-role-signal-requestor {
+  stroke: rgb(0 150 136 / 0.25);
+}
+
+.landing-role-signal-runner {
+  stroke: rgb(255 146 0 / 0.25);
+}
+
+.landing-roles-section.is-requestor .landing-role-signal-requestor,
+.landing-roles-section.is-runner .landing-role-signal-runner {
+  opacity: 0.95;
+}
+
+.landing-role-tab-indicator {
+  width: calc(50% - 0.375rem);
+  background: var(--color-brand-600);
+  box-shadow: 0 6px 16px rgb(11 80 74 / 0.18);
+  transition:
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 300ms ease,
+    box-shadow 300ms ease;
+}
+
+.landing-role-tab-indicator.is-runner {
+  background: var(--color-accent-500);
+  box-shadow: 0 6px 16px rgb(184 76 0 / 0.18);
+  transform: translateX(100%);
+}
+
 .landing-role-panel {
   animation: landing-panel-in 420ms ease both;
+  overflow-anchor: none;
+}
+
+.landing-role-icon {
+  animation: landing-role-icon-float 4.8s ease-in-out infinite;
+}
+
+.landing-role-icon-ring {
+  border: 1px solid rgb(0 150 136 / 0.34);
+  opacity: 0;
+  animation: landing-role-icon-ring 3.4s ease-out infinite;
+}
+
+.landing-role-panel.is-runner .landing-role-icon-ring {
+  border-color: rgb(255 146 0 / 0.38);
+}
+
+.landing-role-icon-ring-two {
+  animation-delay: 1.7s;
+}
+
+.landing-role-content-item {
+  opacity: 0;
+  transform: translateY(9px);
+  animation: landing-role-content-in 440ms ease forwards;
+  animation-delay: var(--role-delay, 0ms);
+}
+
+@media (max-width: 639px) {
+  .landing-role-field {
+    background-size: 25px 25px;
+    opacity: 0.34;
+  }
+
+  .landing-role-connection {
+    opacity: 0.24;
+  }
+
+  .landing-role-orb {
+    height: 20rem;
+    width: 20rem;
+  }
+}
+
+.landing-safety-background {
+  overflow: hidden;
+}
+
+.landing-safety-field {
+  background-image: radial-gradient(
+    circle,
+    rgb(204 251 241 / 0.18) 1px,
+    transparent 1.5px
+  );
+  background-position: center;
+  background-size: 30px 30px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    rgb(0 0 0 / 0.92) 18%,
+    rgb(0 0 0 / 0.92) 82%,
+    transparent
+  );
+  opacity: 0.32;
+}
+
+.landing-safety-orb {
+  filter: blur(64px);
+  will-change: transform;
+}
+
+.landing-safety-orb-one {
+  left: 10%;
+  top: -9rem;
+  height: 24rem;
+  width: 24rem;
+  animation: landing-safety-orb-one 13s ease-in-out infinite alternate;
+  background: rgb(45 212 191 / 0.12);
+}
+
+.landing-safety-orb-two {
+  bottom: -11rem;
+  right: -4rem;
+  height: 28rem;
+  width: 28rem;
+  animation: landing-safety-orb-two 16s ease-in-out infinite alternate;
+  background: rgb(94 234 212 / 0.1);
+}
+
+.landing-safety-radar {
+  left: max(-13rem, calc(50% - 45rem));
+  top: 50%;
+  aspect-ratio: 1;
+  width: min(42rem, 58vw);
+  border: 1px solid rgb(153 246 228 / 0.08);
+  opacity: 0.58;
+  transform: translateY(-50%);
+}
+
+.landing-safety-radar-rings {
+  animation: landing-safety-radar-breathe 7s ease-in-out infinite;
+  background-image:
+    linear-gradient(
+      to right,
+      transparent calc(50% - 0.5px),
+      rgb(153 246 228 / 0.1) 50%,
+      transparent calc(50% + 0.5px)
+    ),
+    linear-gradient(
+      to bottom,
+      transparent calc(50% - 0.5px),
+      rgb(153 246 228 / 0.1) 50%,
+      transparent calc(50% + 0.5px)
+    ),
+    repeating-radial-gradient(
+      circle,
+      transparent 0 15.5%,
+      rgb(153 246 228 / 0.16) 15.8% 16%,
+      transparent 16.3% 31.5%
+    );
+}
+
+.landing-safety-radar-sweep {
+  animation: landing-safety-radar-sweep 18s linear infinite;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 300deg,
+    rgb(94 234 212 / 0.02) 315deg,
+    rgb(94 234 212 / 0.17) 352deg,
+    transparent 360deg
+  );
+  mask-image: radial-gradient(circle, #000 0 69%, transparent 72%);
+  will-change: transform;
+}
+
+.landing-safety-beacon {
+  height: 0.65rem;
+  width: 0.65rem;
+  animation: landing-safety-beacon 2.8s ease-out infinite;
+  background: rgb(153 246 228 / 0.8);
+  box-shadow:
+    0 0 0 7px rgb(94 234 212 / 0.07),
+    0 0 26px rgb(94 234 212 / 0.45);
+  transform: translate(-50%, -50%);
+}
+
+.landing-safety-active-glow {
+  display: none;
+  right: max(-10rem, calc(50% - 45rem));
+  top: var(--safety-active-y, 24%);
+  height: 11rem;
+  width: 34rem;
+  animation: landing-safety-active-glow 4.5s ease-in-out infinite;
+  background: radial-gradient(
+    ellipse,
+    rgb(94 234 212 / 0.2),
+    rgb(20 184 166 / 0.05) 45%,
+    transparent 72%
+  );
+  filter: blur(28px);
+  transform: translateY(-50%);
+  transition: top 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (min-width: 1024px) {
+  .landing-safety-active-glow {
+    display: block;
+  }
+}
+
+@media (max-width: 639px) {
+  .landing-safety-field {
+    background-size: 24px 24px;
+    opacity: 0.24;
+  }
+
+  .landing-safety-radar {
+    left: -15rem;
+    width: 30rem;
+  }
+
+  .landing-safety-orb-two {
+    display: none;
+  }
 }
 
 .scroll-reveal.landing-safety-copy {
@@ -217,8 +546,15 @@ textarea {
   animation-delay: var(--safety-delay, 0ms);
 }
 
+.landing-safety-track {
+  height: var(--safety-track-height, calc(100% - 4.5rem));
+  top: var(--safety-track-top, 2.25rem);
+}
+
 .landing-safety-progress {
-  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  height: var(--safety-progress-height, 0);
+  box-shadow: 0 0 12px rgb(94 234 212 / 0.38);
+  transition: height 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .landing-safety-card {
@@ -259,11 +595,17 @@ textarea {
 .landing-safety-chevron {
   transition:
     transform 280ms ease,
-    background-color 280ms ease;
+    background-color 280ms ease,
+    border-color 280ms ease,
+    box-shadow 280ms ease;
 }
 
 .landing-safety-card.is-active .landing-safety-icon {
-  background-color: rgb(255 255 255 / 0.18);
+  border-color: rgb(153 246 228 / 0.7);
+  background-color: var(--color-brand-600);
+  box-shadow:
+    0 0 0 3px rgb(94 234 212 / 0.1),
+    0 8px 20px rgb(2 44 40 / 0.24);
   transform: rotate(-4deg) scale(1.08);
 }
 
@@ -550,10 +892,110 @@ textarea {
   }
 }
 
+@keyframes landing-role-orb-drift {
+  from {
+    transform: translate3d(-10px, -8px, 0) scale(0.96);
+  }
+  to {
+    transform: translate3d(34px, 26px, 0) scale(1.08);
+  }
+}
+
+@keyframes landing-role-icon-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-5px) rotate(-2deg);
+  }
+}
+
+@keyframes landing-role-icon-ring {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.72);
+  }
+  75%,
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes landing-role-content-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes landing-safety-card-in {
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes landing-safety-orb-one {
+  from {
+    transform: translate3d(-8px, 4px, 0) scale(0.95);
+  }
+  to {
+    transform: translate3d(32px, 28px, 0) scale(1.08);
+  }
+}
+
+@keyframes landing-safety-orb-two {
+  from {
+    transform: translate3d(0, 12px, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-38px, -24px, 0) scale(1.1);
+  }
+}
+
+@keyframes landing-safety-radar-breathe {
+  0%,
+  100% {
+    opacity: 0.58;
+    transform: scale(0.985);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.015);
+  }
+}
+
+@keyframes landing-safety-radar-sweep {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes landing-safety-beacon {
+  0% {
+    opacity: 0.9;
+    box-shadow:
+      0 0 0 0 rgb(94 234 212 / 0.28),
+      0 0 24px rgb(94 234 212 / 0.45);
+  }
+  75%,
+  100% {
+    opacity: 0.45;
+    box-shadow:
+      0 0 0 22px rgb(94 234 212 / 0),
+      0 0 32px rgb(94 234 212 / 0.18);
+  }
+}
+
+@keyframes landing-safety-active-glow {
+  0%,
+  100% {
+    opacity: 0.52;
+  }
+  50% {
+    opacity: 0.86;
   }
 }
 
@@ -632,7 +1074,11 @@ textarea {
   .landing-marquee,
   .landing-step-float,
   .scroll-reveal[data-visible="true"] .landing-progress-fill,
+  .landing-role-orb,
   .landing-role-panel,
+  .landing-role-icon,
+  .landing-role-icon-ring,
+  .landing-role-content-item,
   .scroll-reveal[data-visible="true"] .landing-safety-item,
   .landing-launch-orb,
   .landing-launch-ring,
@@ -651,6 +1097,9 @@ textarea {
 
   .landing-step-card,
   .landing-step-icon,
+  .landing-role-spotlight,
+  .landing-role-node,
+  .landing-role-tab-indicator,
   .landing-safety-progress,
   .landing-safety-card,
   .landing-safety-card::before,
@@ -679,6 +1128,22 @@ textarea {
 
   .butuango-runner-marker::before {
     animation: none;
+  }
+
+  .landing-safety-orb,
+  .landing-safety-radar-rings,
+  .landing-safety-radar-sweep,
+  .landing-safety-beacon,
+  .landing-safety-active-glow {
+    animation: none;
+  }
+
+  .landing-safety-active-glow {
+    transition: none;
+  }
+
+  .landing-role-signal {
+    display: none;
   }
 }
 
