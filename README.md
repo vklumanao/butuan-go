@@ -35,10 +35,9 @@ require their numbered Supabase migration and matching verification SQL. This
 project intentionally does not use GitHub Actions for these checks.
 
 Public Google entry points are controlled by the Vite build mode: development
-mode enables them and production mode disables them. The optional
-`VITE_PUBLIC_AUTH_ENABLED` variable can explicitly override that default. This
-keeps the Google flow available during development without exposing account
-creation in the deployed production app.
+mode enables them and production mode disables them. There is no environment
+variable override, so merging development code cannot accidentally expose
+account creation in the deployed production app.
 
 ## Prerequisites
 
