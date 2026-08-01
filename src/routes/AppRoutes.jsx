@@ -7,6 +7,7 @@ import { LandingPage } from "@/pages/public/LandingPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { AuthCallbackPage } from "@/pages/auth/AuthCallbackPage";
 import { OnboardingPage } from "@/pages/auth/OnboardingPage";
+import { AccountDeletedPage } from "@/pages/auth/AccountDeletedPage";
 import { UnauthorizedPage } from "@/pages/public/UnauthorizedPage";
 import { NotFoundPage } from "@/pages/public/NotFoundPage";
 import { TermsPage } from "@/pages/public/TermsPage";
@@ -31,6 +32,7 @@ import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { AdminDisputesPage } from "@/pages/admin/AdminDisputesPage";
 import { AdminAuditPage } from "@/pages/admin/AdminAuditPage";
 import { AdminReportsPage } from "@/pages/admin/AdminReportsPage";
+import { AdminDeletionRequestsPage } from "@/pages/admin/AdminDeletionRequestsPage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export function AppRoutes() {
@@ -56,6 +58,7 @@ export function AppRoutes() {
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/account-deleted" element={<AccountDeletedPage />} />
         <Route element={<RoleRoute allowedRole={USER_ROLES.REQUESTOR} />}>
           <Route element={<AppShell />}>
             <Route
@@ -111,6 +114,10 @@ export function AppRoutes() {
             <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/disputes" element={<AdminDisputesPage />} />
             <Route path="/admin/reports" element={<AdminReportsPage />} />
+            <Route
+              path="/admin/deletion-requests"
+              element={<AdminDeletionRequestsPage />}
+            />
             <Route path="/admin/audit" element={<AdminAuditPage />} />
             <Route path="/admin/profile" element={<ProfilePage />} />
           </Route>

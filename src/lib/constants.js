@@ -16,6 +16,12 @@ export const ACCOUNT_ACCESS_LABELS = Object.freeze({
   [ACCOUNT_ACCESS_LEVELS.BANNED]: "Permanently banned",
 });
 
+export const ACCOUNT_DELETION_STATUSES = Object.freeze({
+  PENDING: "PENDING",
+  CANCELLED: "CANCELLED",
+  COMPLETED: "COMPLETED",
+});
+
 export const ROLE_LABELS = {
   [USER_ROLES.REQUESTOR]: "Requestor",
   [USER_ROLES.RUNNER]: "Runner",

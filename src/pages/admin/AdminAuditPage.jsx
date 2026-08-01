@@ -17,6 +17,8 @@ const actionLabels = {
   ACCOUNT_RESTRICTED: "Account restricted",
   ACCOUNT_RESTRICTION_UPDATED: "Restriction updated",
   ACCOUNT_RESTRICTION_CLEARED: "Restriction cleared",
+  ACCOUNT_REPORT_RESOLVED: "Safety report resolved",
+  ACCOUNT_ANONYMIZED: "Account anonymized",
 };
 
 export function AdminAuditPage() {
@@ -46,14 +48,19 @@ export function AdminAuditPage() {
     <div className="mx-auto max-w-7xl p-4 sm:p-8">
       <AdminPageHeader
         title="Admin audit log"
-        description="Review protected dispute and account-restriction actions. Normal users cannot write to or read this operational trail."
+        description="Review protected dispute, safety, account-control, and anonymization actions. Normal users cannot write to or read this operational trail."
       />
 
       <div className="mt-8">
         {loading && <AdminLoadingState message="Loading audit events…" />}
-        {!loading && error && <AdminErrorState message={error} onRetry={loadEvents} />}
+        {!loading && error && (
+          <AdminErrorState message={error} onRetry={loadEvents} />
+        )}
         {!loading && !error && events.length === 0 && (
-          <AdminEmptyState title="No audit events yet" description="Resolving a dispute or changing a restriction will create the first event." />
+          <AdminEmptyState
+            title="No audit events yet"
+            description="Resolving a review, changing an account control, or completing anonymization will create the first event."
+          />
         )}
         {!loading && !error && events.length > 0 && (
           <Card>
@@ -62,16 +69,30 @@ export function AdminAuditPage() {
                 {events.map((event) => (
                   <li key={event.id} className="flex gap-4 p-5 sm:p-6">
                     <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-700">
-                      {event.action === "DISPUTE_RESOLVED" ? <FileClock className="h-5 w-5" /> : <Activity className="h-5 w-5" />}
+                      {event.action === "DISPUTE_RESOLVED" ? (
+                        <FileClock className="h-5 w-5" />
+                      ) : (
+                        <Activity className="h-5 w-5" />
+                      )}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-black text-slate-950">{actionLabels[event.action] || event.action}</p>
-                        <Badge className="bg-slate-100 text-slate-700">{event.entity_type}</Badge>
+                        <p className="font-black text-slate-950">
+                          {actionLabels[event.action] || event.action}
+                        </p>
+                        <Badge className="bg-slate-100 text-slate-700">
+                          {event.entity_type}
+                        </Badge>
                       </div>
-                      <p className="mt-1 text-sm text-slate-600">Performed by {event.admin_name} ({event.admin_email})</p>
-                      <p className="mt-1 break-all font-mono text-xs text-slate-400">Entity: {event.entity_id}</p>
-                      <p className="mt-2 text-xs font-semibold text-slate-500">{formatDateTime(event.created_at, "")}</p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        Performed by {event.admin_name} ({event.admin_email})
+                      </p>
+                      <p className="mt-1 break-all font-mono text-xs text-slate-400">
+                        Entity: {event.entity_id}
+                      </p>
+                      <p className="mt-2 text-xs font-semibold text-slate-500">
+                        {formatDateTime(event.created_at, "")}
+                      </p>
                     </div>
                   </li>
                 ))}

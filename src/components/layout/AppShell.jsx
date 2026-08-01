@@ -13,6 +13,7 @@ import {
   Search,
   Scale,
   ShieldAlert,
+  Trash2,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -44,6 +45,7 @@ import {
 import { toast } from "sonner";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { AccountAccessNotice } from "./AccountAccessNotice";
+import { AccountDeletionNotice } from "./AccountDeletionNotice";
 
 const SIDEBAR_STORAGE_KEY = "butuango-desktop-sidebar-open";
 
@@ -61,6 +63,7 @@ function getPageTitle(pathname) {
   if (pathname === "/admin/users") return "Account Directory";
   if (pathname === "/admin/disputes") return "Dispute Review";
   if (pathname === "/admin/reports") return "Safety Reports";
+  if (pathname === "/admin/deletion-requests") return "Deletion Requests";
   if (pathname === "/admin/audit") return "Admin Audit Log";
   if (pathname === "/admin/profile") return "Admin Profile";
   if (pathname.endsWith("/dashboard")) return "Dashboard";
@@ -113,26 +116,43 @@ export function AppShell() {
           { to: "/admin/disputes", label: "Disputes", icon: Scale },
           { to: "/admin/reports", label: "Safety Reports", icon: ShieldAlert },
           { to: "/admin/users", label: "Accounts", icon: UsersRound },
+          {
+            to: "/admin/deletion-requests",
+            label: "Deletion Requests",
+            icon: Trash2,
+          },
           { to: "/admin/audit", label: "Audit Log", icon: Activity },
           { to: "/admin/profile", label: "Profile", icon: UserRound },
         ]
       : [
-          { to: `${base}/dashboard`, label: "Dashboard", icon: LayoutDashboard },
-          ...(activeRole === USER_ROLES.REQUESTOR
-      ? [
           {
-            to: "/requestor/requests",
-            label: "My Requests",
-            icon: ClipboardList,
+            to: `${base}/dashboard`,
+            label: "Dashboard",
+            icon: LayoutDashboard,
           },
-        ]
-      : []),
+          ...(activeRole === USER_ROLES.REQUESTOR
+            ? [
+                {
+                  to: "/requestor/requests",
+                  label: "My Requests",
+                  icon: ClipboardList,
+                },
+              ]
+            : []),
           ...(activeRole === USER_ROLES.RUNNER
-      ? [
-          { to: "/runner/requests", label: "Available Requests", icon: Search },
-          { to: "/runner/tasks", label: "My Tasks", icon: BriefcaseBusiness },
-        ]
-      : []),
+            ? [
+                {
+                  to: "/runner/requests",
+                  label: "Available Requests",
+                  icon: Search,
+                },
+                {
+                  to: "/runner/tasks",
+                  label: "My Tasks",
+                  icon: BriefcaseBusiness,
+                },
+              ]
+            : []),
           { to: `${base}/profile`, label: "Profile", icon: UserRound },
         ];
   async function handleLogout() {
@@ -334,6 +354,7 @@ export function AppShell() {
         }`}
       >
         {activeRole !== USER_ROLES.ADMIN && <AccountAccessNotice />}
+        {activeRole !== USER_ROLES.ADMIN && <AccountDeletionNotice />}
         <Outlet />
       </main>
       <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>

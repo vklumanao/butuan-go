@@ -64,6 +64,14 @@ function getRemainingDays(value) {
 }
 
 function AccessBadge({ account }) {
+  if (account.anonymized_at) {
+    return (
+      <Badge className="bg-slate-900 text-white">
+        <LockKeyhole className="h-3.5 w-3.5" />
+        Anonymized
+      </Badge>
+    );
+  }
   if (account.role === USER_ROLES.ADMIN) {
     return (
       <Badge className="bg-violet-100 text-violet-800">
@@ -393,7 +401,11 @@ export function AdminUsersPage() {
                                 <AccessBadge account={account} />
                               </td>
                               <td className="px-5 py-4 text-right">
-                                {account.role === USER_ROLES.ADMIN ? (
+                                {account.anonymized_at ? (
+                                  <span className="text-xs text-slate-400">
+                                    Deletion completed
+                                  </span>
+                                ) : account.role === USER_ROLES.ADMIN ? (
                                   <span className="text-xs text-slate-400">
                                     Backend-managed
                                   </span>
